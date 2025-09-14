@@ -265,3 +265,5 @@ If you encounter any issues or bugs:
 ---
 
 **AdminPlus** - Professional admin management for Counter-Strike 2 servers.
+
+💡 **Note**: This plugin includes many advanced features not listed here, such as automatic notifications when banned players try to reconnect with different accounts, and many other smart admin tools. Check the full command list above to discover all capabilities!
