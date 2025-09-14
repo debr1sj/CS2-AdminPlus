@@ -234,7 +234,7 @@ Quick map access with aliases:
 ## 🗺️ Roadmap
 
 ### 🚀 Upcoming Features
-- [ ] **Advanced Menu System**: Enhanced HTML menus with more features
+- [ ] **Advanced Menu System**: Integrate advanced menu systems
 
 ### 🎯 Future Versions
 - **v1.1.0**: Advanced Menu System
