@@ -183,6 +183,26 @@ The plugin features interactive HTML menus accessible via `css_admin`:
 - **Weapon Management**: Give weapons, strip weapons
 - **Physics Control**: Noclip, godmode, speed, health
 
+## 🔒 Reservation System
+
+The plugin automatically manages admin slots with the following features:
+
+- **Admin Priority**: Admins with `@css/admin` or `@css/reservation` permissions get priority access
+- **Automatic Kicking**: When server is full, non-admin players are automatically kicked to make room for admins
+- **Smart Selection**: Kicks players based on highest ping, longest connection time, or random selection
+- **Slot Management**: Maximum 3 admin reservations at once
+- **Auto-Cleanup**: Removes expired player data and invalid admin reservations
+
+### **How it works:**
+1. When an admin tries to join a full server, the system automatically kicks a non-admin player
+2. Regular players are kicked when server reaches maximum capacity
+3. Admin reservations are tracked and managed automatically
+4. The system respects admin immunity levels
+
+### **Requirements:**
+- Admin permissions: `@css/admin` or `@css/reservation`
+- Server must be configured with proper max player settings
+
 ## 🌍 Localization
 
 The plugin supports English language with customizable messages through translation files.
