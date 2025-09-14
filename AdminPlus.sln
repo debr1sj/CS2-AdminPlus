@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36109.1 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AdminPlus", "AdminPlus.csproj", "{B776CFC1-75F2-BA25-6F4B-07A9A85933AA}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B776CFC1-75F2-BA25-6F4B-07A9A85933AA}.Debug|x64.ActiveCfg = Debug|x64
+		{B776CFC1-75F2-BA25-6F4B-07A9A85933AA}.Debug|x64.Build.0 = Debug|x64
+		{B776CFC1-75F2-BA25-6F4B-07A9A85933AA}.Release|x64.ActiveCfg = Release|x64
+		{B776CFC1-75F2-BA25-6F4B-07A9A85933AA}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E9163AB0-DD9A-4923-8DE2-45D6E4FCED5F}
+	EndGlobalSection
+EndGlobal
