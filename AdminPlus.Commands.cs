@@ -107,7 +107,7 @@ public partial class AdminPlus
                 }
                 else if (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic"))
                 {
-                    if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]);
+                    if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
                     return;
                 }
                 ForceChangeMap(caller, MapAliases[alias]);
@@ -123,7 +123,7 @@ public partial class AdminPlus
         }
         else if (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic"))
         {
-            if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]);
+            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
             return;
         }
 
@@ -167,7 +167,7 @@ public partial class AdminPlus
         string executorName = GetExecutorNameCommand(caller);
         string targetName = target.PlayerName;
 
-        Server.PrintToChatAll(Localizer["Player.Kick.Success", executorName, EscapeForStringFormat(targetName), reason]);
+        PlayerExtensions.PrintToAll(Localizer["Player.Kick.Success", executorName, EscapeForStringFormat(targetName), reason]);
 
         if (caller == null)
             Console.WriteLine($"[AdminPlus] Panel player kicked: {targetName} (Reason: {reason})");
@@ -176,7 +176,7 @@ public partial class AdminPlus
     private void CmdSlap(CCSPlayerController? caller, CommandInfo info)
     {
         if (caller != null && (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/slay")))
-        { if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]); return; }
+        { if (caller.IsValid) caller.Print(Localizer["NoPermission"]); return; }
 
         if (info.ArgCount < 2)
         { SendUsageMessage(caller, "Slap.Usage", "Usage: !slap <target> <damage>"); return; }
@@ -234,16 +234,20 @@ public partial class AdminPlus
 
         string adminName = GetExecutorNameCommand(caller);
         string label = targets.Count == 1 ? targets[0].PlayerName : Localizer["Team.ALL"];
-        if (targets.Count == 1)
-            Server.PrintToChatAll(Localizer["css_slap<player>", adminName, EscapeForStringFormat(label), damage]);
-        else
-            Server.PrintToChatAll(Localizer["css_slap<multiple>", adminName, targets.Count, damage]);
+        string message = targets.Count == 1 
+            ? Localizer["css_slap<player>", adminName, EscapeForStringFormat(label), damage]
+            : Localizer["css_slap<multiple>", adminName, targets.Count, damage];
+        
+        foreach (var player in Utilities.GetPlayers().Where(p => p.IsValid && !p.IsBot))
+        {
+            player.Print(message);
+        }
     }
 
     private void CmdSlay(CCSPlayerController? caller, CommandInfo info)
     {
         if (caller != null && (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/slay")))
-        { if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]); return; }
+        { if (caller.IsValid) caller.Print(Localizer["NoPermission"]); return; }
 
         if (info.ArgCount < 2)
         { SendUsageMessage(caller, "Slay.Usage", "Usage: !slay <target>"); return; }
@@ -271,16 +275,17 @@ public partial class AdminPlus
         }
 
         string adminName = GetExecutorNameCommand(caller);
-        if (targets.Count == 1)
-            Server.PrintToChatAll(Localizer["css_slay<player>", adminName, EscapeForStringFormat(targets[0].PlayerName)]);
-        else
-            Server.PrintToChatAll(Localizer["css_slay<multiple>", adminName, targets.Count]);
+        string message = targets.Count == 1 
+            ? Localizer["css_slay<player>", adminName, EscapeForStringFormat(targets[0].PlayerName)]
+            : Localizer["css_slay<multiple>", adminName, targets.Count];
+        
+        PlayerExtensions.PrintToAll(message);
     }
 
     private void CmdRename(CCSPlayerController? caller, CommandInfo info)
     {
         if (caller != null && (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/slay")))
-        { if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]); return; }
+        { if (caller.IsValid) caller.Print(Localizer["NoPermission"]); return; }
 
         if (info.ArgCount < 3)
         { SendUsageMessage(caller, "Rename.Usage", "Usage: css_rename <target> <new_name>"); return; }
@@ -294,7 +299,7 @@ public partial class AdminPlus
 
         var t = targets[0];
         SafeRename(t, newName);
-        Server.PrintToChatAll(Localizer["css_rename", GetExecutorNameCommand(caller), EscapeForStringFormat(t.PlayerName), EscapeForStringFormat(SanitizeName(newName))]);
+        PlayerExtensions.PrintToAll(Localizer["css_rename", GetExecutorNameCommand(caller), EscapeForStringFormat(t.PlayerName), EscapeForStringFormat(SanitizeName(newName))]);
     }
 
     private void CmdMoney(CCSPlayerController? caller, CommandInfo info)
@@ -304,7 +309,7 @@ public partial class AdminPlus
             Console.WriteLine("[AdminPlus] Panel money command executed.");
         }
         else if (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/slay"))
-        { if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]); return; }
+        { if (caller.IsValid) caller.Print(Localizer["NoPermission"]); return; }
 
         if (info.ArgCount < 3)
         { SendUsageMessage(caller, "Money.Usage", "Usage: css_money <target> <amount>"); return; }
@@ -355,10 +360,11 @@ public partial class AdminPlus
         }
 
         string adminName = GetExecutorNameCommand(caller);
-        if (targets.Count == 1)
-            Server.PrintToChatAll(Localizer["css_money<player>", adminName, EscapeForStringFormat(targets[0].PlayerName), moneyAmount]);
-        else
-            Server.PrintToChatAll(Localizer["css_money<multiple>", adminName, targets.Count, moneyAmount]);
+        string message = targets.Count == 1 
+            ? Localizer["css_money<player>", adminName, EscapeForStringFormat(targets[0].PlayerName), moneyAmount]
+            : Localizer["css_money<multiple>", adminName, targets.Count, moneyAmount];
+        
+        PlayerExtensions.PrintToAll(message);
     }
 
     private void CmdArmor(CCSPlayerController? caller, CommandInfo info)
@@ -368,7 +374,7 @@ public partial class AdminPlus
             Console.WriteLine("[AdminPlus] Panel armor command executed.");
         }
         else if (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/slay"))
-        { if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]); return; }
+        { if (caller.IsValid) caller.Print(Localizer["NoPermission"]); return; }
 
         if (info.ArgCount < 3)
         { SendUsageMessage(caller, "Armor.Usage", "Usage: css_armor <target> <amount>"); return; }
@@ -426,10 +432,11 @@ public partial class AdminPlus
         }
 
         string adminName = GetExecutorNameCommand(caller);
-        if (targets.Count == 1)
-            Server.PrintToChatAll(Localizer["css_armor<player>", adminName, EscapeForStringFormat(targets[0].PlayerName), armorAmount]);
-        else
-            Server.PrintToChatAll(Localizer["css_armor<multiple>", adminName, targets.Count, armorAmount]);
+        string message = targets.Count == 1 
+            ? Localizer["css_armor<player>", adminName, EscapeForStringFormat(targets[0].PlayerName), armorAmount]
+            : Localizer["css_armor<multiple>", adminName, targets.Count, armorAmount];
+        
+        PlayerExtensions.PrintToAll(message);
     }
 
     private static void SafeRename(CCSPlayerController player, string newname)
@@ -511,7 +518,7 @@ public partial class AdminPlus
             {
                 if (caller != null && caller.IsValid && CheckImmunity(caller, target))
                 {
-                    if (caller.IsValid) caller.PrintToChat(Localizer["Kick.ImmunityBlockedPlayer", target.PlayerName]);
+                    if (caller.IsValid) caller.Print(Localizer["Kick.ImmunityBlockedPlayer", target.PlayerName]);
                     continue;
                 }
 
@@ -522,8 +529,8 @@ public partial class AdminPlus
 
         if (kickedCount > 0)
         {
-            Server.PrintToChatAll(Localizer["Team.Kick.Success", executorName, teamName, reason]);
-            Server.PrintToChatAll(Localizer["Team.Kick.PlayerCount", kickedCount]);
+            PlayerExtensions.PrintToAll(Localizer["Team.Kick.Success", executorName, teamName, reason]);
+            PlayerExtensions.PrintToAll(Localizer["Team.Kick.PlayerCount", kickedCount]);
 
             if (caller == null)
                 Console.WriteLine($"[AdminPlus] Panel {kickedCount} players kicked from {teamName} team: (Reason: {reason})");
@@ -555,7 +562,7 @@ public partial class AdminPlus
             {
                 if (caller != null && caller.IsValid && CheckImmunity(caller, target))
                 {
-                    if (caller.IsValid) caller.PrintToChat(Localizer["Money.ImmunityBlockedPlayer", target.PlayerName]);
+                    if (caller.IsValid) caller.Print(Localizer["Money.ImmunityBlockedPlayer", target.PlayerName]);
                     continue;
                 }
 
@@ -578,8 +585,8 @@ public partial class AdminPlus
 
         if (affectedCount > 0)
         {
-            Server.PrintToChatAll(Localizer["Team.Money.Success", executorName, teamName, moneyAmount]);
-            Server.PrintToChatAll(Localizer["Team.Money.PlayerCount", affectedCount]);
+            PlayerExtensions.PrintToAll(Localizer["Team.Money.Success", executorName, teamName, moneyAmount]);
+            PlayerExtensions.PrintToAll(Localizer["Team.Money.PlayerCount", affectedCount]);
 
             if (caller == null)
                 Console.WriteLine($"[AdminPlus] Panel {affectedCount} players from {teamName} team received money: {moneyAmount}");
@@ -611,7 +618,7 @@ public partial class AdminPlus
             {
                 if (caller != null && caller.IsValid && CheckImmunity(caller, target))
                 {
-                    if (caller.IsValid) caller.PrintToChat(Localizer["Armor.ImmunityBlockedPlayer", target.PlayerName]);
+                    if (caller.IsValid) caller.Print(Localizer["Armor.ImmunityBlockedPlayer", target.PlayerName]);
                     continue;
                 }
 
@@ -642,8 +649,8 @@ public partial class AdminPlus
 
         if (affectedCount > 0)
         {
-            Server.PrintToChatAll(Localizer["Team.Armor.Success", executorName, teamName, armorAmount]);
-            Server.PrintToChatAll(Localizer["Team.Armor.PlayerCount", affectedCount]);
+            PlayerExtensions.PrintToAll(Localizer["Team.Armor.Success", executorName, teamName, armorAmount]);
+            PlayerExtensions.PrintToAll(Localizer["Team.Armor.PlayerCount", affectedCount]);
 
             if (caller == null)
                 Console.WriteLine($"[AdminPlus] Panel {affectedCount} players from {teamName} team received armor: {armorAmount}");
@@ -658,7 +665,7 @@ public partial class AdminPlus
         }
         else if (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic"))
         {
-            if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]);
+            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
             return;
         }
 
@@ -683,7 +690,7 @@ public partial class AdminPlus
         }
         else if (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic"))
         {
-            if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]);
+            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
             return;
         }
 
@@ -701,7 +708,7 @@ public partial class AdminPlus
         }
 
         string executorName = GetExecutorNameCommand(caller);
-        Server.PrintToChatAll(Localizer["Map.WorkshopChanged", executorName, workshopId]);
+        PlayerExtensions.PrintToAll(Localizer["Map.WorkshopChanged", executorName, workshopId]);
         Server.ExecuteCommand($"host_workshop_map {workshopId}");
 
         if (caller == null)
@@ -716,7 +723,7 @@ public partial class AdminPlus
         }
         else if (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/root"))
         {
-            if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]);
+            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
             return;
         }
 
@@ -732,7 +739,7 @@ public partial class AdminPlus
         string executorName = GetExecutorNameCommand(caller);
 
         if (caller != null && caller.IsValid)
-            caller.PrintToChat(Localizer["Rcon.Sent", executorName, cmd]);
+            caller.Print(Localizer["Rcon.Sent", executorName, cmd]);
         else
             Console.WriteLine($"[AdminPlus] Panel RCON command executed: {cmd}");
     }
@@ -745,7 +752,7 @@ public partial class AdminPlus
         }
         else if (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic"))
         {
-            if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]);
+            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
             return;
         }
 
@@ -768,7 +775,7 @@ public partial class AdminPlus
         {
             string response = $"{cvarName} = {convar.StringValue}";
             if (caller != null && caller.IsValid)
-                caller.PrintToChat(response);
+                caller.Print(response);
             else
                 Console.WriteLine(response);
             return;
@@ -786,12 +793,15 @@ public partial class AdminPlus
         convar.SetValue(newValue);
 
         string executorName = GetExecutorNameCommand(caller);
-        string message = $"{cvarName} changed: {oldValue} → {newValue}";
+        string message = Localizer["Cvar.Changed", executorName, oldValue, newValue];
 
         if (caller != null && caller.IsValid)
-            caller.PrintToChat(message);
+            caller.Print(message);
         else
             Console.WriteLine($"[AdminPlus] {message}");
+        
+        // Tüm oyunculara da gönder
+        PlayerExtensions.PrintToAll(message);
     }
 
 
@@ -803,7 +813,7 @@ public partial class AdminPlus
         }
         else if (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic"))
         {
-            if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]);
+            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
             return;
         }
 
@@ -834,14 +844,14 @@ public partial class AdminPlus
         }
         else if (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic"))
         {
-            if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]);
+            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
             return;
         }
 
         Server.ExecuteCommand("mp_restartgame 1");
 
         string executorName = GetExecutorNameCommand(caller);
-        Server.PrintToChatAll(Localizer["Round.Restarted", executorName]);
+        PlayerExtensions.PrintToAll(Localizer["Round.Restarted", executorName]);
 
         if (caller == null)
             Console.WriteLine("[AdminPlus] Panel round restarted.");
@@ -868,7 +878,7 @@ public partial class AdminPlus
             Server.ExecuteCommand($"host_workshop_map {workshopId}");
 
             var executorName = GetExecutorNameCommand(caller);
-            Server.PrintToChatAll(Localizer["Map.WorkshopChanged", executorName, workshopId]);
+            PlayerExtensions.PrintToAll(Localizer["Map.WorkshopChanged", executorName, workshopId]);
             return;
         }
 
@@ -881,7 +891,7 @@ public partial class AdminPlus
         var executor = GetExecutorNameCommand(caller);
         var targetMap = mapName;
 
-        Server.PrintToChatAll(Localizer["Map.Changed", executor, targetMap]);
+        PlayerExtensions.PrintToAll(Localizer["Map.Changed", executor, targetMap]);
 
         AddTimer(4.0f, () =>
         {
@@ -940,11 +950,11 @@ public partial class AdminPlus
             var message = Localizer[localeKey];
             if (message == localeKey)
             {
-                caller.PrintToChat(consoleMessage);
+                caller.Print(consoleMessage);
             }
             else
             {
-                caller.PrintToChat(message);
+                caller.Print(message);
             }
         }
         else
@@ -958,9 +968,9 @@ public partial class AdminPlus
         if (caller != null && caller.IsValid)
         {
             if (args.Length > 0)
-                caller.PrintToChat(string.Format(Localizer[localeKey], args));
+                caller.Print(string.Format(Localizer[localeKey], args));
             else
-                caller.PrintToChat(Localizer[localeKey]);
+                caller.Print(Localizer[localeKey]);
         }
         else
         {

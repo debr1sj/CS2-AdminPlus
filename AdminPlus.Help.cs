@@ -38,13 +38,13 @@ public partial class AdminPlus
     {
         if (caller != null && (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic")))
         {
-            if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]);
+            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
             return;
         }
 
         if (caller != null && caller.IsValid)
         {
-            caller.PrintToChat(Localizer["Help.Chat.ConsoleOutput"]);
+            caller.Print(Localizer["Help.Chat.ConsoleOutput"]);
         }
         
         ShowAdminHelpConsole(caller);

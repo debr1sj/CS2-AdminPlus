@@ -60,13 +60,13 @@ public partial class AdminPlus
         }
         else if (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/ban"))
         {
-            if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]);
+            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
             return;
         }
 
         if (info.ArgCount < 2)
         {
-            if (caller != null && caller.IsValid) caller.PrintToChat(Localizer["Ban.Usage"]);
+            if (caller != null && caller.IsValid) caller.Print(Localizer["Ban.Usage"]);
             else Console.WriteLine(Localizer["Ban.UsageConsole"]);
             return;
         }
@@ -84,7 +84,7 @@ public partial class AdminPlus
 
         if (target == null && caller != null && caller.IsValid)
         {
-            caller.PrintToChat(Localizer["Ban.TargetNotFound", targetInput]);
+            caller.Print(Localizer["Ban.TargetNotFound", targetInput]);
             return;
         }
 
@@ -96,7 +96,7 @@ public partial class AdminPlus
 
         if (caller != null && caller.IsValid && target != null && CheckImmunity(caller, target))
         {
-            caller.PrintToChat(Localizer["Ban.ImmunityBlocked"]);
+            caller.Print(Localizer["Ban.ImmunityBlocked"]);
             return;
         }
 
@@ -131,7 +131,7 @@ public partial class AdminPlus
             
             if (caller != null && caller.IsValid && CheckImmunity(caller, target))
             {
-                if (caller.IsValid) caller.PrintToChat(Localizer["Ban.ImmunityBlockedPlayer", target.PlayerName]);
+                if (caller.IsValid) caller.Print(Localizer["Ban.ImmunityBlockedPlayer", target.PlayerName]);
                 continue;
             }
 
@@ -160,8 +160,8 @@ public partial class AdminPlus
             File.WriteAllLines(BannedUserPath, SteamBans.Values.Select(x => x.line));
             
             string durationText = minutes == 0 ? Localizer["Duration.Forever"] : Localizer["Duration.Temporary", minutes];
-            Server.PrintToChatAll(Localizer["Team.Ban.Success", executorName, teamName, durationText, reason]);
-            Server.PrintToChatAll(Localizer["Team.Ban.PlayerCount", bannedCount]);
+            PlayerExtensions.PrintToAll(Localizer["Team.Ban.Success", executorName, teamName, durationText, reason]);
+            PlayerExtensions.PrintToAll(Localizer["Team.Ban.PlayerCount", bannedCount]);
 
             LogAction($"{executorName} banned {bannedCount} players from {teamName} for {minutes} minutes. Reason: {reason}");
         }
@@ -174,7 +174,7 @@ public partial class AdminPlus
     private void SendTeamBanErrorMessage(CCSPlayerController? caller, string teamName)
     {
         if (caller != null && caller.IsValid)
-            caller.PrintToChat(Localizer["Error.NoPlayersInTeam", teamName]);
+            caller.Print(Localizer["Error.NoPlayersInTeam", teamName]);
         else
             Console.WriteLine(Localizer["Error.NoPlayersInTeam", teamName]);
     }
@@ -232,9 +232,9 @@ public partial class AdminPlus
         string executorName = GetExecutorName(caller);
 
         if (minutes == 0)
-            Server.PrintToChatAll(Localizer["Player.Ban.Success", executorName, safeName, Localizer["Duration.Forever"], reason]);
+            PlayerExtensions.PrintToAll(Localizer["Player.Ban.Success", executorName, safeName, Localizer["Duration.Forever"], reason]);
         else
-            Server.PrintToChatAll(Localizer["Player.Ban.Success", executorName, safeName, Localizer["Duration.Temporary", minutes], reason]);
+            PlayerExtensions.PrintToAll(Localizer["Player.Ban.Success", executorName, safeName, Localizer["Duration.Temporary", minutes], reason]);
 
         LogAction($"{executorName} banned {safeName} ({steamId}) [IP:{ip}] for {minutes} minutes. Reason: {reason}");
     }
@@ -247,13 +247,13 @@ public partial class AdminPlus
         }
         else if (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/ban"))
         {
-            if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]);
+            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
             return;
         }
 
         if (info.ArgCount < 2)
         {
-            if (caller != null && caller.IsValid) caller.PrintToChat(Localizer["IpBan.Usage"]);
+            if (caller != null && caller.IsValid) caller.Print(Localizer["IpBan.Usage"]);
             else Console.WriteLine(Localizer["IpBan.UsageConsole"]);
             return;
         }
@@ -272,7 +272,7 @@ public partial class AdminPlus
 
         if (string.IsNullOrWhiteSpace(ip) || !Regex.IsMatch(ip, @"^\d{1,3}(\.\d{1,3}){3}$"))
         {
-            if (caller != null && caller.IsValid) caller.PrintToChat(Localizer["IpBan.Invalid"]);
+            if (caller != null && caller.IsValid) caller.Print(Localizer["IpBan.Invalid"]);
             else Console.WriteLine(Localizer["IpBan.InvalidConsole"]);
             return;
         }
@@ -298,9 +298,9 @@ public partial class AdminPlus
         string executorName = GetExecutorName(caller);
 
         if (target != null)
-            Server.PrintToChatAll(Localizer["IpBan.AddedNick", executorName, displayName, reason]);
+            PlayerExtensions.PrintToAll(Localizer["IpBan.AddedNick", executorName, displayName, reason]);
         else
-            Server.PrintToChatAll(Localizer["IpBan.AddedIp", executorName, ip, reason]);
+            PlayerExtensions.PrintToAll(Localizer["IpBan.AddedIp", executorName, ip, reason]);
 
         LogAction($"{executorName} IP banned {displayName} ({ip}). Reason: {reason}");
     }
@@ -313,13 +313,13 @@ public partial class AdminPlus
         }
         else if (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/unban"))
         {
-            if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]);
+            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
             return;
         }
 
         if (info.ArgCount < 2)
         {
-            if (caller != null && caller.IsValid) caller.PrintToChat(Localizer["Unban.Usage"]);
+            if (caller != null && caller.IsValid) caller.Print(Localizer["Unban.Usage"]);
             else Console.WriteLine(Localizer["Unban.UsageConsole"]);
             return;
         }
@@ -345,12 +345,12 @@ public partial class AdminPlus
 
         if (removed)
         {
-            Server.PrintToChatAll(Localizer["Unban.Success", executorName, key]);
+            PlayerExtensions.PrintToAll(Localizer["Unban.Success", executorName, key]);
             LogAction($"{executorName} unbanned {key}");
         }
         else
         {
-            if (caller != null && caller.IsValid) caller.PrintToChat(Localizer["Unban.NotFound", key]);
+            if (caller != null && caller.IsValid) caller.Print(Localizer["Unban.NotFound", key]);
             else Console.WriteLine(Localizer["Unban.NotFoundConsole", key]);
         }
     }
@@ -377,11 +377,11 @@ public partial class AdminPlus
 
         if (!caller.IsValid) return;
 
-        var menu = new CenterHtmlMenu(Localizer["LastBan.Header"], this);
+        var menu = CreateMenu(Localizer["LastBan.Header"]);
 
         if (!DisconnectedPlayers.Any())
         {
-            menu.AddMenuOption(Localizer["LastBan.Empty"], (ply, opt) => { });
+            menu?.AddMenuOption(Localizer["LastBan.Empty"], (ply, opt) => { });
         }
         else
         {
@@ -391,32 +391,38 @@ public partial class AdminPlus
                 string ip = kv.Value.ip;
                 ulong steamId = kv.Key;
 
-                menu.AddMenuOption($"{playerName}", (ply, opt) => ShowLastBanOptions(caller, playerName, steamId, ip));
+                menu?.AddMenuOption($"{playerName}", (ply, opt) => ShowLastBanOptions(caller, playerName, steamId, ip));
             }
         }
 
-        menu.ExitButton = true;
-        menu.Open(caller);
+        if (menu != null)
+        {
+            menu.ExitButton = true;
+            OpenMenu(caller, menu);
+        }
     }
 
     private void ShowLastBanOptions(CCSPlayerController admin, string playerName, ulong steamId, string ip)
     {
         if (!admin.IsValid) return;
 
-        var menu = new CenterHtmlMenu(playerName, this);
+        var menu = CreateMenu(playerName);
 
-        menu.AddMenuOption(Localizer["Menu.Option.SteamIdBan"], (ply, opt) => ShowDurationMenuLastBan(admin, steamId, playerName, ip));
-        menu.AddMenuOption(Localizer["Menu.Option.IpBan"], (ply, opt) => ShowReasonMenuLastBan(admin, playerName, steamId, ip, 0, true));
+        menu?.AddMenuOption(Localizer["Menu.Option.SteamIdBan"], (ply, opt) => ShowDurationMenuLastBan(admin, steamId, playerName, ip));
+        menu?.AddMenuOption(Localizer["Menu.Option.IpBan"], (ply, opt) => ShowReasonMenuLastBan(admin, playerName, steamId, ip, 0, true));
 
-        menu.ExitButton = true;
-        menu.Open(admin);
+        if (menu != null)
+        {
+            menu.ExitButton = true;
+            OpenMenu(admin, menu);
+        }
     }
 
     private void ShowDurationMenuLastBan(CCSPlayerController admin, ulong steamId, string playerName, string ip)
     {
         if (!admin.IsValid) return;
 
-        var menu = new CenterHtmlMenu(Localizer["Menu.ChooseDuration"], this);
+        var menu = CreateMenu(Localizer["Menu.ChooseDuration"]);
 
         var durations = new Dictionary<string, int>
         {
@@ -427,17 +433,20 @@ public partial class AdminPlus
         };
 
         foreach (var entry in durations)
-            menu.AddMenuOption(entry.Key, (ply, opt) => ShowReasonMenuLastBan(admin, playerName, steamId, ip, entry.Value, false));
+            menu?.AddMenuOption(entry.Key, (ply, opt) => ShowReasonMenuLastBan(admin, playerName, steamId, ip, entry.Value, false));
 
-        menu.ExitButton = true;
-        menu.Open(admin);
+        if (menu != null)
+        {
+            menu.ExitButton = true;
+            OpenMenu(admin, menu);
+        }
     }
 
     private void ShowReasonMenuLastBan(CCSPlayerController admin, string playerName, ulong steamId, string ip, int minutes, bool isIpBan)
     {
         if (!admin.IsValid) return;
 
-        var menu = new CenterHtmlMenu(Localizer["Menu.ChooseReason"], this);
+        var menu = CreateMenu(Localizer["Menu.ChooseReason"]);
 
         var reasons = new[] {
             Localizer["Reason.Cheat"],
@@ -450,7 +459,7 @@ public partial class AdminPlus
 
         foreach (var reason in reasons)
         {
-            menu.AddMenuOption(reason, (ply, opt) =>
+            menu?.AddMenuOption(reason, (ply, opt) =>
             {
                 if (!admin.IsValid) return;
 
@@ -467,7 +476,7 @@ public partial class AdminPlus
                         File.WriteAllLines(BannedIpPath, IpBans.Values.Select(x => x.line));
                     }
 
-                    Server.PrintToChatAll(Localizer["IpBan.AddedIp", admin.PlayerName, ip, reason]);
+                    PlayerExtensions.PrintToAll(Localizer["IpBan.AddedIp", admin.PlayerName, ip, reason]);
                     LogAction($"{admin.PlayerName} ip-banned {safeName} ({ip}). Reason: {reason}");
                 }
                 else
@@ -483,17 +492,20 @@ public partial class AdminPlus
                     }
 
                     if (minutes == 0)
-                        Server.PrintToChatAll(Localizer["Player.Ban.Success", admin.PlayerName, safeName, Localizer["Duration.Forever"], reason]);
+                        PlayerExtensions.PrintToAll(Localizer["Player.Ban.Success", admin.PlayerName, safeName, Localizer["Duration.Forever"], reason]);
                     else
-                        Server.PrintToChatAll(Localizer["Player.Ban.Success", admin.PlayerName, safeName, Localizer["Duration.Temporary", minutes], reason]);
+                        PlayerExtensions.PrintToAll(Localizer["Player.Ban.Success", admin.PlayerName, safeName, Localizer["Duration.Temporary", minutes], reason]);
 
                     LogAction($"{admin.PlayerName} banned {safeName} ({steamId}) [IP:{ip}] for {minutes} minutes. Reason: {reason}");
                 }
             });
         }
 
-        menu.ExitButton = true;
-        menu.Open(admin);
+        if (menu != null)
+        {
+            menu.ExitButton = true;
+            OpenMenu(admin, menu);
+        }
     }
 
     private void CmdBanInfo(CCSPlayerController? caller, CommandInfo info)
@@ -505,7 +517,7 @@ public partial class AdminPlus
 
         if (info.ArgCount < 2)
         {
-            if (caller != null && caller.IsValid) caller.PrintToChat(Localizer["BanInfo.Usage"]);
+            if (caller != null && caller.IsValid) caller.Print(Localizer["BanInfo.Usage"]);
             else Console.WriteLine(Localizer["BanInfo.UsageConsole"]);
             return;
         }
@@ -521,7 +533,7 @@ public partial class AdminPlus
             string cleanLine = Regex.Replace(steamBan.line, @"\s*expiry:\d+", "");
 
             if (caller != null && caller.IsValid)
-                caller.PrintToChat(Localizer["BanInfo.Steam", key, remainStr, cleanLine]);
+                caller.Print(Localizer["BanInfo.Steam", key, remainStr, cleanLine]);
             else
                 Console.WriteLine(Localizer["BanInfo.SteamConsole", key, remainStr, cleanLine]);
             return;
@@ -532,14 +544,14 @@ public partial class AdminPlus
             string cleanLine = Regex.Replace(ipBan.line, @"\s*expiry:\d+", "");
 
             if (caller != null && caller.IsValid)
-                caller.PrintToChat(Localizer["BanInfo.Ip", key, cleanLine]);
+                caller.Print(Localizer["BanInfo.Ip", key, cleanLine]);
             else
                 Console.WriteLine(Localizer["BanInfo.IpConsole", key, cleanLine]);
             return;
         }
 
         if (caller != null && caller.IsValid)
-            caller.PrintToChat(Localizer["BanInfo.NotFound", key]);
+            caller.Print(Localizer["BanInfo.NotFound", key]);
         else
             Console.WriteLine(Localizer["BanInfo.NotFoundConsole", key]);
     }
@@ -737,7 +749,7 @@ public partial class AdminPlus
     {
         if (caller != null && (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/root")))
         {
-            if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]);
+            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
             return;
         }
 
@@ -757,7 +769,7 @@ public partial class AdminPlus
         }
 
         if (caller != null && caller.IsValid)
-            caller.PrintToChat(Localizer["CleanBans.Success", steamBanCount, ipBanCount]);
+            caller.Print(Localizer["CleanBans.Success", steamBanCount, ipBanCount]);
         else
             Console.WriteLine(Localizer["CleanBans.Console", steamBanCount, ipBanCount]);
             
@@ -768,7 +780,7 @@ public partial class AdminPlus
     {
         if (caller != null && (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/root")))
         {
-            if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]);
+            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
             return;
         }
 
@@ -782,7 +794,7 @@ public partial class AdminPlus
         }
 
         if (caller != null && caller.IsValid)
-            caller.PrintToChat(Localizer["CleanIpBans.Success", ipBanCount]);
+            caller.Print(Localizer["CleanIpBans.Success", ipBanCount]);
         else
             Console.WriteLine(Localizer["CleanIpBans.Console", ipBanCount]);
             
@@ -793,7 +805,7 @@ public partial class AdminPlus
     {
         if (caller != null && (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/root")))
         {
-            if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]);
+            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
             return;
         }
 
@@ -807,7 +819,7 @@ public partial class AdminPlus
         }
 
         if (caller != null && caller.IsValid)
-            caller.PrintToChat(Localizer["CleanSteamBans.Success", steamBanCount]);
+            caller.Print(Localizer["CleanSteamBans.Success", steamBanCount]);
         else
             Console.WriteLine(Localizer["CleanSteamBans.Console", steamBanCount]);
             

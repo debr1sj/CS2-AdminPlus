@@ -138,7 +138,7 @@ public partial class AdminPlus
                 }
                 else
                 {
-                    player.PrintToChat(Localizer["Reservation.PlayerKicked"]);
+                    player.Print(Localizer["Reservation.PlayerKicked"]);
                     AddTimer(0.1f, () => KickPlayerForReservation(player));
                     return HookResult.Continue;
                 }
@@ -150,7 +150,7 @@ public partial class AdminPlus
                 {
                     if (_reservedAdmins.Count >= MaxAdminReservations)
                     {
-                        player.PrintToChat(Localizer["Reservation.AdminLimitReached", MaxAdminReservations]);
+                        player.Print(Localizer["Reservation.AdminLimitReached", MaxAdminReservations]);
                         AddTimer(0.1f, () => KickPlayerForReservation(player));
                         return HookResult.Continue;
                     }
@@ -166,14 +166,14 @@ public partial class AdminPlus
                         if (targetToKick != null)
                         {
                             _reservedAdmins.Add(player);
-                            player.PrintToChat(Localizer["Reservation.AdminKicking", targetToKick.PlayerName]);
+                            player.Print(Localizer["Reservation.AdminKicking", targetToKick.PlayerName]);
                             
                             AddTimer(0.1f, () => KickPlayerForReservation(targetToKick));
                             return HookResult.Continue;
                         }
                         else
                         {
-                            player.PrintToChat(Localizer["Reservation.AdminCannotEnter"]);
+                            player.Print(Localizer["Reservation.AdminCannotEnter"]);
                             AddTimer(0.1f, () => KickPlayerForReservation(player));
                             return HookResult.Continue;
                         }

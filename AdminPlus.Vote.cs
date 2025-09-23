@@ -8,6 +8,8 @@ using CounterStrikeSharp.API.Modules.Timers;
 using CounterStrikeSharp.API.ValveConstants.Protobuf;
 using System;
 using System.Collections.Generic;
+
+#pragma warning disable CS8602 // Olası null başvurunun başvurma işlemi
 using System.IO;
 using System.Linq;
 
@@ -16,7 +18,7 @@ namespace AdminPlus;
 public partial class AdminPlus
 {
 
-    private static CenterHtmlMenu? _currentVoteMenu = null;
+    private static IMenu? _currentVoteMenu = null;
     private static Dictionary<string, int> _voteResults = new();
     private static Dictionary<CCSPlayerController, string> _playerVotes = new();
     private static Timer? _voteTimer = null;
@@ -70,7 +72,7 @@ public partial class AdminPlus
     {
         if (caller != null && (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic")))
         {
-            if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]);
+            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
             return;
         }
 
@@ -78,7 +80,7 @@ public partial class AdminPlus
         {
             string message = Localizer["Vote.AlreadyInProgress"];
             if (caller != null && caller.IsValid)
-                caller.PrintToChat(message);
+                caller.Print(message);
             else
                 Console.WriteLine(message);
             return;
@@ -88,7 +90,7 @@ public partial class AdminPlus
         {
             string usage = Localizer["Vote.Usage"];
             if (caller != null && caller.IsValid)
-                caller.PrintToChat(usage);
+                caller.Print(usage);
             else
                 Console.WriteLine(usage);
             return;
@@ -106,7 +108,7 @@ public partial class AdminPlus
         {
             string message = Localizer["Vote.NotEnoughOptions"];
             if (caller != null && caller.IsValid)
-                caller.PrintToChat(message);
+                caller.Print(message);
             else
                 Console.WriteLine(message);
             return;
@@ -119,7 +121,7 @@ public partial class AdminPlus
     {
         if (caller != null && (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic")))
         {
-            if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]);
+            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
             return;
         }
 
@@ -127,7 +129,7 @@ public partial class AdminPlus
         {
             string message = Localizer["Vote.AlreadyInProgress"];
             if (caller != null && caller.IsValid)
-                caller.PrintToChat(message);
+                caller.Print(message);
             else
                 Console.WriteLine(message);
             return;
@@ -137,7 +139,7 @@ public partial class AdminPlus
         {
             string usage = Localizer["VoteMap.Usage"];
             if (caller != null && caller.IsValid)
-                caller.PrintToChat(usage);
+                caller.Print(usage);
             else
                 Console.WriteLine(usage);
             return;
@@ -167,21 +169,21 @@ public partial class AdminPlus
 
         if (!_isVoteInProgress)
         {
-            caller.PrintToChat(Localizer["Vote.NotInProgress"]);
+            caller.Print(Localizer["Vote.NotInProgress"]);
             return;
         }
 
         if (_remainingTime <= 0)
         {
-            caller.PrintToChat(Localizer["Vote.AlreadyEnded"]);
+            caller.Print(Localizer["Vote.AlreadyEnded"]);
             return;
         }
 
         if (_currentVoteMenu != null && caller.IsValid)
         {
-            MenuManager.CloseActiveMenu(caller);
+            CloseMenu(caller);
             _currentVoteMenu.Open(caller);
-            caller.PrintToChat(Localizer["Vote.MenuReopened"]);
+            caller.Print(Localizer["Vote.MenuReopened"]);
         }
 
         if (_playerVotes.ContainsKey(caller))
@@ -189,7 +191,7 @@ public partial class AdminPlus
             string previousVote = _playerVotes[caller];
             _voteResults[previousVote]--;
             _playerVotes.Remove(caller);
-            caller.PrintToChat(Localizer["Vote.Revoted"]);
+            caller.Print(Localizer["Vote.Revoted"]);
         }
     }
 
@@ -197,7 +199,7 @@ public partial class AdminPlus
     {
         if (caller != null && (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic")))
         {
-            if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]);
+            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
             return;
         }
 
@@ -205,7 +207,7 @@ public partial class AdminPlus
         {
             string message = Localizer["Vote.NotInProgress"];
             if (caller != null && caller.IsValid)
-                caller.PrintToChat(message);
+                caller.Print(message);
             else
                 Console.WriteLine(message);
             return;
@@ -242,7 +244,7 @@ public partial class AdminPlus
         }
 
         string startMessage = Localizer["Vote.Started", _voteInitiator, question];
-        Server.PrintToChatAll(startMessage);
+        PlayerExtensions.PrintToAll(startMessage);
 
         _voteTimer = AddTimer(_voteTimeLimit, () => EndVote());
         
@@ -269,7 +271,7 @@ public partial class AdminPlus
         {
             string baseMessage = Localizer["Vote.CountdownWithRevote"];
             string countdownMessage = baseMessage.Replace("{0}", _remainingTime.ToString());
-            Server.PrintToChatAll(countdownMessage);
+            PlayerExtensions.PrintToAll(countdownMessage);
         }
 
         if (_remainingTime <= 0)
@@ -285,7 +287,7 @@ public partial class AdminPlus
 
         string titleWithCountdown = Localizer["Vote.MenuTitleWithTime", _currentVoteQuestion, _remainingTime];
         
-        var newMenu = new CenterHtmlMenu(titleWithCountdown, this);
+        var newMenu = CreateMenu(titleWithCountdown);
         
         foreach (var option in _voteResults.Keys)
         {
@@ -300,7 +302,7 @@ public partial class AdminPlus
         {
             if (player.IsValid)
             {
-                MenuManager.CloseActiveMenu(player);
+                CloseMenu(player);
                 newMenu.Open(player);
             }
         }
@@ -314,7 +316,7 @@ public partial class AdminPlus
 
         string titleWithCountdown = Localizer["Vote.MenuTitleWithTime", _currentVoteQuestion, _remainingTime];
         
-        var newMenu = new CenterHtmlMenu(titleWithCountdown, this);
+        var newMenu = CreateMenu(titleWithCountdown);
         
         foreach (var option in _voteResults.Keys)
         {
@@ -329,7 +331,7 @@ public partial class AdminPlus
         {
             if (player.IsValid)
             {
-                MenuManager.CloseActiveMenu(player);
+                CloseMenu(player);
                 newMenu.Open(player);
             }
         }
@@ -343,7 +345,7 @@ public partial class AdminPlus
 
         string titleWithCountdown = Localizer["Vote.MenuTitleWithTime", _currentVoteQuestion, _remainingTime];
         
-        var newMenu = new CenterHtmlMenu(titleWithCountdown, this);
+        var newMenu = CreateMenu(titleWithCountdown);
         
         foreach (var option in _voteResults.Keys)
         {
@@ -358,7 +360,7 @@ public partial class AdminPlus
         {
             if (player.IsValid)
             {
-                MenuManager.CloseActiveMenu(player);
+                CloseMenu(player);
                 newMenu.Open(player);
             }
         }
@@ -369,7 +371,7 @@ public partial class AdminPlus
     private void CreateVoteMenuWithCountdown(string question, List<string> options)
     {
         string titleWithCountdown = Localizer["Vote.MenuTitleWithTime", question, _remainingTime];
-        _currentVoteMenu = new CenterHtmlMenu(titleWithCountdown, this);
+        _currentVoteMenu = CreateMenu(titleWithCountdown);
 
         foreach (string option in options)
         {
@@ -407,9 +409,9 @@ public partial class AdminPlus
         _playerVotes[player] = option;
         _voteResults[option]++;
 
-        player.PrintToChat(Localizer["Vote.Voted", option]);
+        player.Print(Localizer["Vote.Voted", option]);
 
-        MenuManager.CloseActiveMenu(player);
+        CloseMenu(player);
 
         UpdateVoteMenuForNonVoters();
     }
@@ -431,7 +433,7 @@ public partial class AdminPlus
         {
             if (player.IsValid)
             {
-                MenuManager.CloseActiveMenu(player);
+                CloseMenu(player);
                 _currentVoteMenu.Open(player);
             }
         }
@@ -454,7 +456,7 @@ public partial class AdminPlus
         {
             if (player.IsValid)
             {
-                MenuManager.CloseActiveMenu(player);
+                CloseMenu(player);
                 _currentVoteMenu.Open(player);
             }
         }
@@ -468,7 +470,7 @@ public partial class AdminPlus
 
         CloseAllVoteMenus();
 
-        Server.PrintToChatAll(Localizer["Vote.Ended"]);
+        PlayerExtensions.PrintToAll(Localizer["Vote.Ended"]);
 
         var winner = _voteResults.OrderByDescending(x => x.Value).FirstOrDefault();
         int totalVotes = _voteResults.Values.Sum();
@@ -484,7 +486,7 @@ public partial class AdminPlus
     {
         string baseMessage = Localizer["Vote.WinnerOnly"];
         string winnerMessage = baseMessage.Replace("{0}", winner.Key);
-        Server.PrintToChatAll(winnerMessage);
+        PlayerExtensions.PrintToAll(winnerMessage);
     }
 
     private void ProcessVoteResult(KeyValuePair<string, int> winner)
@@ -534,7 +536,7 @@ public partial class AdminPlus
 
         if (!string.IsNullOrEmpty(mapName))
         {
-            Server.PrintToChatAll(Localizer["VoteMap.Changed", mapName]);
+            PlayerExtensions.PrintToAll(Localizer["VoteMap.Changed", mapName]);
             
             AddTimer(4.0f, () =>
             {
@@ -556,7 +558,7 @@ public partial class AdminPlus
         {
             string reason = Localizer["Reason.VoteResult"];
             Server.ExecuteCommand($"kickid {_targetPlayer.UserId} \"{reason}\"");
-            Server.PrintToChatAll(Localizer["VoteKick.Success", _targetPlayer.PlayerName]);
+            PlayerExtensions.PrintToAll(Localizer["VoteKick.Success", _targetPlayer.PlayerName]);
         }
     }
 
@@ -580,7 +582,7 @@ public partial class AdminPlus
             }
 
             _targetPlayer.Disconnect(NetworkDisconnectionReason.NETWORK_DISCONNECT_STEAM_BANNED);
-            Server.PrintToChatAll(Localizer["VoteBan.Success", _targetPlayer.PlayerName]);
+            PlayerExtensions.PrintToAll(Localizer["VoteBan.Success", _targetPlayer.PlayerName]);
         }
     }
 
@@ -589,7 +591,7 @@ public partial class AdminPlus
         if (_targetPlayer != null && _targetPlayer.IsValid)
         {
             ApplyPunishment(_targetPlayer, "GAG", 30, Localizer["Reason.VoteResult"], null);
-            Server.PrintToChatAll(Localizer["VoteGag.Success", _targetPlayer.PlayerName]);
+            PlayerExtensions.PrintToAll(Localizer["VoteGag.Success", _targetPlayer.PlayerName]);
         }
     }
 
@@ -598,7 +600,7 @@ public partial class AdminPlus
         if (_targetPlayer != null && _targetPlayer.IsValid)
         {
             ApplyPunishment(_targetPlayer, "MUTE", 30, Localizer["Reason.VoteResult"], null);
-            Server.PrintToChatAll(Localizer["VoteMute.Success", _targetPlayer.PlayerName]);
+            PlayerExtensions.PrintToAll(Localizer["VoteMute.Success", _targetPlayer.PlayerName]);
         }
     }
 
@@ -608,7 +610,7 @@ public partial class AdminPlus
         {
             ApplyPunishment(_targetPlayer, "MUTE", 30, Localizer["Reason.VoteResult"], null);
             ApplyPunishment(_targetPlayer, "GAG", 30, Localizer["Reason.VoteResult"], null);
-            Server.PrintToChatAll(Localizer["VoteSilence.Success", _targetPlayer.PlayerName]);
+            PlayerExtensions.PrintToAll(Localizer["VoteSilence.Success", _targetPlayer.PlayerName]);
         }
     }
 
@@ -654,7 +656,7 @@ public partial class AdminPlus
         _isVoteInProgress = false;
 
         string cancelMessage = Localizer["Vote.Cancelled", _voteInitiator];
-        Server.PrintToChatAll(cancelMessage);
+        PlayerExtensions.PrintToAll(cancelMessage);
 
         CloseAllVoteMenus();
 
@@ -667,7 +669,7 @@ public partial class AdminPlus
         foreach (var player in players)
         {
             if (player.IsValid)
-                MenuManager.CloseActiveMenu(player);
+                CloseMenu(player);
         }
     }
 
@@ -675,7 +677,7 @@ public partial class AdminPlus
     {
         if (caller != null && (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic")))
         {
-            if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]);
+            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
             return;
         }
 
@@ -683,7 +685,7 @@ public partial class AdminPlus
         {
             string message = Localizer["Vote.AlreadyInProgress"];
             if (caller != null && caller.IsValid)
-                caller.PrintToChat(message);
+                caller.Print(message);
             else
                 Console.WriteLine(message);
             return;
@@ -696,7 +698,7 @@ public partial class AdminPlus
     {
         if (caller != null && (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic")))
         {
-            if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]);
+            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
             return;
         }
 
@@ -704,7 +706,7 @@ public partial class AdminPlus
         {
             string message = Localizer["Vote.AlreadyInProgress"];
             if (caller != null && caller.IsValid)
-                caller.PrintToChat(message);
+                caller.Print(message);
             else
                 Console.WriteLine(message);
             return;
@@ -717,7 +719,7 @@ public partial class AdminPlus
     {
         if (caller != null && (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic")))
         {
-            if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]);
+            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
             return;
         }
 
@@ -725,7 +727,7 @@ public partial class AdminPlus
         {
             string message = Localizer["Vote.AlreadyInProgress"];
             if (caller != null && caller.IsValid)
-                caller.PrintToChat(message);
+                caller.Print(message);
             else
                 Console.WriteLine(message);
             return;
@@ -738,7 +740,7 @@ public partial class AdminPlus
     {
         if (caller != null && (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic")))
         {
-            if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]);
+            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
             return;
         }
 
@@ -746,7 +748,7 @@ public partial class AdminPlus
         {
             string message = Localizer["Vote.AlreadyInProgress"];
             if (caller != null && caller.IsValid)
-                caller.PrintToChat(message);
+                caller.Print(message);
             else
                 Console.WriteLine(message);
             return;
@@ -759,7 +761,7 @@ public partial class AdminPlus
     {
         if (caller != null && (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic")))
         {
-            if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]);
+            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
             return;
         }
 
@@ -767,7 +769,7 @@ public partial class AdminPlus
         {
             string message = Localizer["Vote.AlreadyInProgress"];
             if (caller != null && caller.IsValid)
-                caller.PrintToChat(message);
+                caller.Print(message);
             else
                 Console.WriteLine(message);
             return;
@@ -783,7 +785,7 @@ public partial class AdminPlus
         if (players.Count == 0)
         {
             if (caller != null && caller.IsValid)
-                caller.PrintToChat(Localizer["Menu.NoPlayers"]);
+                caller.Print(Localizer["Menu.NoPlayers"]);
             else
                 Console.WriteLine(Localizer["Menu.NoPlayers"]);
             return;
@@ -798,7 +800,7 @@ public partial class AdminPlus
             _ => Localizer["Menu.ChoosePlayer"]
         };
 
-        var playerMenu = new CenterHtmlMenu(menuTitle, this);
+        var playerMenu = CreateMenu(menuTitle);
         
         foreach (var player in players)
         {
@@ -806,10 +808,13 @@ public partial class AdminPlus
             playerMenu.AddMenuOption(playerText, (menuCaller, option) => StartPlayerVote(menuCaller, player, voteType, question));
         }
 
-        playerMenu.ExitButton = true;
-        
-        if (caller != null && caller.IsValid)
-            playerMenu.Open(caller);
+        if (playerMenu != null)
+        {
+            playerMenu.ExitButton = true;
+            
+            if (caller != null && caller.IsValid)
+                playerMenu.Open(caller);
+        }
     }
 
     private void StartPlayerVote(CCSPlayerController caller, CCSPlayerController targetPlayer, VoteType voteType, string baseQuestion)

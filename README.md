@@ -24,6 +24,16 @@ Advanced CounterStrikeSharp admin plugin with comprehensive features: ban/kick s
 - [CounterStrikeSharp](https://github.com/roflmuffin/CounterStrikeSharp) framework
 - [Metamod:Source](https://www.sourcemm.net/downloads.php?branch=dev) plugin
 
+### 🔗 Dependencies
+
+AdminPlus requires the following plugins to be installed:
+
+- **[MenuManagerCS2](https://github.com/NickFox007/MenuManagerCS2)**
+- **[PlayerSettingsCS2](https://github.com/NickFox007/PlayerSettingsCS2)**
+- **[AnyBaseLibCS2](https://github.com/NickFox007/AnyBaseLibCS2)**
+
+> ⚠️ **Important**: All dependencies must be installed and running before AdminPlus can function properly.
+
 ## 🚀 Installation
 
 1. Download the latest release
@@ -172,40 +182,55 @@ css_admin                                    # Open admin menu [@css/ban]
 css_adminhelp                                # Show detailed command help [@css/generic]
 ```
 
-## 🎮 Menu System
+## 🎮 Advanced Menu System
 
-The plugin features interactive HTML menus accessible via `css_admin`:
+The plugin features a powerful interactive HTML menu system powered by [MenuManagerCS2](https://github.com/NickFox007/MenuManagerCS2), accessible via `css_admin`:
 
-- **Admin Management**: Add/remove admins with immunity levels
-- **Player Commands**: Ban, kick, mute, gag, slay, slap players
-- **Server Commands**: Change map, restart round, cleanup
-- **Fun Commands**: Teleport, freeze, blind, drug effects
-- **Weapon Management**: Give weapons, strip weapons
-- **Physics Control**: Noclip, godmode, speed, health
+### 📋 Menu Categories
+- **👥 Admin Management**: Add/remove admins with immunity levels and group management
+- **🔨 Player Commands**: Ban, kick, mute, gag, slay, slap players with intuitive interface
+- **🌍 Server Commands**: Change map, restart round, cleanup operations
+- **🎯 Fun Commands**: Teleport, freeze, blind, drug effects, and visual modifications
+- **🔫 Weapon Management**: Give weapons, strip weapons, and weapon control
+- **⚡ Physics Control**: Noclip, godmode, speed, health, and movement modifications
+- **💬 Communication**: Chat controls, announcements, and player messaging
+- **🗳️ Voting System**: Map votes, kick votes, ban votes, and custom voting
 
-## 🔒 Reservation System
-
-The plugin automatically manages admin slots with the following features:
-
-- **Admin Priority**: Admins with `@css/admin` or `@css/reservation` permissions get priority access
-- **Automatic Kicking**: When server is full, non-admin players are automatically kicked to make room for admins
-- **Smart Selection**: Kicks players based on highest ping, longest connection time, or random selection
-- **Slot Management**: Maximum 3 admin reservations at once
-- **Auto-Cleanup**: Removes expired player data and invalid admin reservations
-
-### **How it works:**
-1. When an admin tries to join a full server, the system automatically kicks a non-admin player
-2. Regular players are kicked when server reaches maximum capacity
-3. Admin reservations are tracked and managed automatically
-4. The system respects admin immunity levels
-
-### **Requirements:**
-- Admin permissions: `@css/admin` or `@css/reservation`
-- Server must be configured with proper max player settings
+### ✨ Menu Features
+- **Responsive Design**: Works on all screen resolutions
+- **Real-time Updates**: Live player information and status
+- **Quick Actions**: One-click commands for common tasks
+- **Permission-based**: Shows only commands you have access to
+- **Search & Filter**: Find players quickly with search functionality
 
 ## 🌍 Localization
 
-The plugin supports English language with customizable messages through translation files.
+The plugin currently supports **English** language with customizable messages through translation files.
+
+### 🚀 Multi-language Support Coming Soon!
+
+We're working on adding support for multiple languages including:
+- 🇹🇷 Turkish
+- 🇩🇪 German  
+- 🇪🇸 Spanish
+- 🇫🇷 French
+- 🇷🇺 Russian
+- 🇦🇷 Arabic
+- 🇮🇷 Farsi
+- 🇱🇻 Latvian
+- 🇵🇱 Polish
+- 🇧🇷 Brazilian Portuguese
+- 🇵🇹 Portuguese
+- 🇨🇳 Chinese (Simplified)
+
+### 🤝 Contribute Translations
+
+**Want to help translate AdminPlus to your language?** 
+
+If you'd like to contribute translations for your language or help improve existing ones, please contact us on Discord! We'd love to have your help in making AdminPlus accessible to players worldwide.
+
+- **Discord**: debr1s
+- **GitHub Issues**: [Create a translation request](https://github.com/debr1sj/CS2-AdminPlus/issues)
 
 ## 🔒 Permission System
 
@@ -251,13 +276,27 @@ Quick map access with aliases:
 4. Test thoroughly
 5. Submit a pull request
 
+## 📋 Changelog
+
+### 🎉 Version 1.0.1 (Latest)
+- ✨ **MenuManager Integration**: Added advanced HTML menu system with MenuManager dependency
+- 🏷️ **Prefix System**: Centralized prefix management from language files
+- 🐛 **Fixed hrespawn**: Players now respawn at their last death position instead of team spawn
+- 🧹 **Code Cleanup**: Removed unused reservation status command
+- 📝 **Translation Updates**: Cleaned up language files
+
 ## 🗺️ Roadmap
 
-### 🚀 Upcoming Features
-- [ ] **Advanced Menu System**: Integrate advanced menu systems
+### 🚀 Upcoming Features (v1.1.0)
+- 🌍 **Multi-language Support**: Complete translation system with 12+ languages
+- 🎮 **Enhanced Menu System**: More interactive features and improved UI
+- 📊 **Advanced Statistics**: Player statistics and admin activity tracking
+- 🔧 **Configuration System**: Web-based configuration panel
 
 ### 🎯 Future Versions
-- **v1.1.0**: Advanced Menu System
+- **v1.2.0**: Advanced reporting and analytics
+- **v1.3.0**: Plugin API for third-party integrations
+- **v2.0.0**: Complete rewrite with modern architecture
 
 ## 🆘 Support
 
@@ -265,7 +304,7 @@ Quick map access with aliases:
 If you encounter any issues or bugs:
 1. Check the [GitHub Issues](https://github.com/debr1sj/CS2-AdminPlus/issues) first
 2. Create a new issue with:
-   - **Plugin version**: AdminPlus v1.0.0
+   - **Plugin version**: AdminPlus v1.0.1
    - **CounterStrikeSharp version**: Your CSS version
    - **Error logs**: Any console errors
    - **Steps to reproduce**: How to trigger the bug
@@ -285,5 +324,3 @@ If you encounter any issues or bugs:
 ---
 
 **AdminPlus** - Professional admin management for Counter-Strike 2 servers.
-
-💡 **Note**: This plugin includes many advanced features not listed here, such as automatic notifications when banned players try to reconnect with different accounts, and many other smart admin tools. Check the full command list above to discover all capabilities!

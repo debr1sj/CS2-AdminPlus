@@ -87,7 +87,7 @@ public partial class AdminPlus
     private void SendUsageMessageAdmin(CCSPlayerController? caller, string localeKey, string consoleMessage)
     {
         if (caller != null && caller.IsValid)
-            caller.PrintToChat(Localizer[localeKey]);
+            caller.Print(Localizer[localeKey]);
         else
             Console.WriteLine(consoleMessage);
     }
@@ -97,9 +97,9 @@ public partial class AdminPlus
         if (caller != null && caller.IsValid)
         {
             if (args.Length > 0)
-                caller.PrintToChat(string.Format(Localizer[localeKey], args));
+                caller.Print(string.Format(Localizer[localeKey], args));
             else
-                caller.PrintToChat(Localizer[localeKey]);
+                caller.Print(Localizer[localeKey]);
         }
         else
         {
@@ -117,7 +117,7 @@ public partial class AdminPlus
         {
             if (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/root"))
             {
-                if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]);
+                if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
                 return;
             }
         }
@@ -135,7 +135,7 @@ public partial class AdminPlus
         if (!TryParseSteam64(idRaw, out var s64) || s64 == 0)
         {
             if (caller != null && caller.IsValid)
-                caller.PrintToChat(Localizer["InvalidSteamId"]);
+                caller.Print(Localizer["InvalidSteamId"]);
             else
                 Console.WriteLine("[AdminPlus] Invalid SteamID!");
             return;
@@ -153,7 +153,7 @@ public partial class AdminPlus
         if (root.ContainsKey(key))
         {
             if (caller != null && caller.IsValid)
-                caller.PrintToChat(Localizer["Admin.Exists", $"{playerName} {steamId3}"]);
+                caller.Print(Localizer["Admin.Exists", $"{playerName} {steamId3}"]);
             else
                 Console.WriteLine($"[AdminPlus] This admin already exists: {playerName} {steamId3}");
             return;
@@ -174,7 +174,7 @@ public partial class AdminPlus
         string executorName = GetExecutorNameAdmin(caller);
         
         if (caller != null && caller.IsValid)
-            caller.PrintToChat(Localizer["Admin.Added", playerName, steamId3, group, immunity]);
+            caller.Print(Localizer["Admin.Added", playerName, steamId3, group, immunity]);
         else
             Console.WriteLine(Localizer["Admin.Add.Console", playerName, steamId3, group, immunity]);
     }
@@ -189,7 +189,7 @@ public partial class AdminPlus
         {
             if (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/root"))
             {
-                if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]);
+                if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
                 return;
             }
         }
@@ -204,7 +204,7 @@ public partial class AdminPlus
         if (!TryParseSteam64(idArg, out var s64) || s64 == 0)
         {
             if (caller != null && caller.IsValid)
-                caller.PrintToChat(Localizer["InvalidSteamId"]);
+                caller.Print(Localizer["InvalidSteamId"]);
             else
                 Console.WriteLine("[AdminPlus] Invalid SteamID!");
             return;
@@ -214,7 +214,7 @@ public partial class AdminPlus
         if (!ReadAdminsFile(out var root) || !root.ContainsKey(key))
         {
             if (caller != null && caller.IsValid)
-                caller.PrintToChat(Localizer["Admin.NotFound", key]);
+                caller.Print(Localizer["Admin.NotFound", key]);
             else
                 Console.WriteLine($"[AdminPlus] Admin not found: {key}");
             return;
@@ -229,7 +229,7 @@ public partial class AdminPlus
 
         string executorName = GetExecutorNameAdmin(caller);
         if (caller != null && caller.IsValid)
-            caller.PrintToChat(Localizer["Admin.Removed", $"{name} {steamId3}"]);
+            caller.Print(Localizer["Admin.Removed", $"{name} {steamId3}"]);
         else
             Console.WriteLine(Localizer["Admin.Remove.Console", $"{name} {steamId3}"]);
     }
@@ -244,7 +244,7 @@ public partial class AdminPlus
         {
             if (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/root"))
             {
-                if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]);
+                if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
                 return;
             }
         }
@@ -310,7 +310,7 @@ public partial class AdminPlus
         else
         {
             caller.PrintToConsole("--------- END ADMIN LIST ---------");
-            caller.PrintToChat(Localizer["Admin.List.Printed"]);
+            caller.Print(Localizer["Admin.List.Printed"]);
         }
     }
 

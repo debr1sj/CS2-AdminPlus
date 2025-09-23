@@ -2,11 +2,13 @@ using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
+using CounterStrikeSharp.API.Core.Capabilities;
 using CounterStrikeSharp.API.Modules.Admin;
 using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Entities;
 using CounterStrikeSharp.API.Modules.Events;
 using CounterStrikeSharp.API.Modules.Memory.DynamicFunctions;
+using CounterStrikeSharp.API.Modules.Menu;
 using CounterStrikeSharp.API.Modules.Timers;
 using CounterStrikeSharp.API.Modules.Utils;
 using CounterStrikeSharp.API.ValveConstants.Protobuf;
@@ -16,15 +18,20 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
+using MenuManager;
 
 namespace AdminPlus;
+
+// AdminPlus artık config dosyası oluşturmuyor
+// MenuManager'ın kendi config dosyasını kullanıyor
 
 [MinimumApiVersion(78)]
 public partial class AdminPlus : BasePlugin
 {
     public override string ModuleName => "AdminPlus";
     public override string ModuleVersion => "1.0.0";
-    public override string ModuleAuthor => "AdminPlus";
+    public override string ModuleAuthor => "debr1sj";
 
     internal static string BannedUserPath = string.Empty;
     internal static string BannedIpPath = string.Empty;
@@ -34,18 +41,23 @@ public partial class AdminPlus : BasePlugin
     internal static Dictionary<ulong, (string name, string ip)> DisconnectedPlayers = new();
 
     private Timer? cleanupTimer;
-    private static AdminPlus? _instance;
+    internal static AdminPlus? _instance;
     private bool _communicationInitialized = false;
+    
+    // MenuManager API
+    internal static IMenuApi? MenuApi;
+    private static readonly PluginCapability<IMenuApi> MenuCapability = new("menu:nfcore");
     
     public static string GetPrefix()
     {
-        return "{green}[AdminPlus]{default}";
+        return _instance?.Localizer?["ap_prefix"] ?? "";
     }
 
     public AdminPlus()
     {
         _instance = this;
     }
+
 
     public override void Load(bool hotReload)
     {
@@ -73,6 +85,22 @@ public partial class AdminPlus : BasePlugin
         RegisterHelpCommands();
 
         InitializeReservationSystem();
+    }
+
+    public override void OnAllPluginsLoaded(bool hotReload)
+    {
+        base.OnAllPluginsLoaded(hotReload);
+        
+        // MenuManager API'yi yükle
+        MenuApi = MenuCapability.Get();
+        if (MenuApi != null)
+        {
+            Console.WriteLine("[AdminPlus] MenuManager API loaded successfully!");
+        }
+        else
+        {
+            Console.WriteLine("[AdminPlus] MenuManager API not found, using fallback CenterHtmlMenu");
+        }
         AddCommand("admins", Localizer["Admins.Usage"], CmdAdmins);
         AddCommand("css_admins", "List online admins in console", CmdAdmins);
         RegisterListener<Listeners.OnClientAuthorized>((slot, id) => EnforceBan(slot));
@@ -100,6 +128,17 @@ public partial class AdminPlus : BasePlugin
                 _communicationInitialized = true;
             }
         });
+
+        // MenuManager API'yi yükle
+        try
+        {
+            MenuApi = MenuCapability.Get();
+            Console.WriteLine("[AdminPlus] MenuManager API loaded successfully!");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[AdminPlus] Failed to load MenuManager API: {ex.Message}");
+        }
 
         RegisterEventHandler<EventPlayerDeath>((@event, info) =>
         {
@@ -306,13 +345,13 @@ public partial class AdminPlus : BasePlugin
             {
                 if (onlineAdmins.Count == 0)
                 {
-                    caller.PrintToChat(Localizer["Admins.None"]);
+                    caller.Print(Localizer["Admins.None"]);
                     return;
                 }
 
                 foreach (var a in onlineAdmins.OrderByDescending(x => x.imm))
-                    caller.PrintToChat(Localizer["Admins.Item", a.name, a.imm]);
-                caller.PrintToChat(Localizer["Admins.Total", onlineAdmins.Count]);
+                    caller.Print(Localizer["Admins.Item", a.name, a.imm]);
+                caller.Print(Localizer["Admins.Total", onlineAdmins.Count]);
             }
             else
             {
@@ -453,5 +492,78 @@ public partial class AdminPlus : BasePlugin
         Console.WriteLine(message);
     }
     
+    // MenuManager API Helper Methods
+    internal static IMenu? CreateMenu(string title, Action<CCSPlayerController>? backAction = null)
+    {
+        if (MenuApi == null)
+        {
+            Console.WriteLine("[AdminPlus] MenuManager API not available, falling back to CenterHtmlMenu");
+            return _instance != null ? new CenterHtmlMenu(title, _instance) : null;
+        }
 
+        // MenuManager'ın varsayılan menü tipini kullan
+        return MenuApi?.GetMenu(title);
+    }
+
+    internal static IMenu? CreateMenuForcedType(string title, MenuType menuType, Action<CCSPlayerController>? backAction = null)
+    {
+        if (MenuApi == null)
+        {
+            Console.WriteLine("[AdminPlus] MenuManager API not available, falling back to CenterHtmlMenu");
+            return _instance != null ? new CenterHtmlMenu(title, _instance) : null;
+        }
+
+        return MenuApi?.GetMenuForcetype(title, menuType);
+    }
+
+    internal static void OpenMenu(CCSPlayerController player, IMenu? menu)
+    {
+        if (menu == null) return;
+        menu.Open(player);
+    }
+
+    internal static void CloseMenu(CCSPlayerController player)
+    {
+        MenuApi?.CloseMenu(player);
+    }
+}
+
+public static class PlayerExtensions
+{
+    public static void Print(this CCSPlayerController controller, string message = "")
+    {
+        var prefix = AdminPlus._instance?.Localizer?["ap_prefix"] ?? "";
+        if (!string.IsNullOrEmpty(prefix))
+            controller.PrintToChat($"{prefix} {message}");
+        else
+            controller.PrintToChat(message);
+    }
+    
+        public static void PrintToAll(string message)
+        {
+            try
+            {
+                var prefix = AdminPlus._instance?.Localizer?["ap_prefix"] ?? "";
+                string fullMessage = !string.IsNullOrEmpty(prefix) ? $"{prefix} {message}" : message;
+                
+                // Sunucu tam olarak başlamadan önce güvenli kontrol
+                if (Server.MaxPlayers <= 0)
+                {
+                    // Sunucu henüz hazır değilse sadece console'a yazdır
+                    Console.WriteLine($"[AdminPlus] {fullMessage}");
+                    return;
+                }
+                
+                foreach (var player in Utilities.GetPlayers().Where(p => p.IsValid && !p.IsBot))
+                {
+                    player.PrintToChat(fullMessage);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Hata durumunda console'a yazdır
+                Console.WriteLine($"[AdminPlus] PrintToAll Error: {ex.Message}");
+                Console.WriteLine($"[AdminPlus] {message}");
+            }
+        }
 }

@@ -349,7 +349,7 @@ public partial class AdminPlus
     {
         if (caller != null && (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/chat")))
         {
-            if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]);
+            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
             return;
         }
 
@@ -366,7 +366,7 @@ public partial class AdminPlus
     {
         if (caller != null && (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/chat")))
         {
-            if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]);
+            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
             return;
         }
 
@@ -383,7 +383,7 @@ public partial class AdminPlus
     {
         if (caller != null && (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/chat")))
         {
-            if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]);
+            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
             return;
         }
 
@@ -400,7 +400,7 @@ public partial class AdminPlus
     {
         if (caller != null && (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/chat")))
         {
-            if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]);
+            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
             return;
         }
 
@@ -417,7 +417,7 @@ public partial class AdminPlus
     {
         if (caller != null && (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/chat")))
         {
-            if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]);
+            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
             return;
         }
 
@@ -438,7 +438,7 @@ public partial class AdminPlus
 
         if (caller != null && caller.IsValid && CheckImmunity(caller, target))
         {
-            caller.PrintToChat(Localizer["Punish.ImmunityBlocked"]);
+            caller.Print(Localizer["Punish.ImmunityBlocked"]);
             return;
         }
 
@@ -459,9 +459,9 @@ public partial class AdminPlus
         string targetName = SanitizeName(target.PlayerName);
 
         if (duration == 0)
-            Server.PrintToChatAll(Localizer["PermaSILENCE", executorName, targetName, reason]);
+            PlayerExtensions.PrintToAll(Localizer["PermaSILENCE", executorName, targetName, reason]);
         else
-            Server.PrintToChatAll(Localizer["SILENCE", executorName, targetName, duration, reason]);
+            PlayerExtensions.PrintToAll(Localizer["SILENCE", executorName, targetName, duration, reason]);
 
         LogAction($"{executorName} silenced {targetName} ({target.SteamID}) for {duration} minutes. Reason: {reason}");
     }
@@ -470,7 +470,7 @@ public partial class AdminPlus
     {
         if (caller != null && (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/chat")))
         {
-            if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]);
+            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
             return;
         }
 
@@ -495,7 +495,7 @@ public partial class AdminPlus
         string executorName = GetExecutorName(caller);
         string targetName = SanitizeName(target.PlayerName);
 
-        Server.PrintToChatAll(Localizer["Unsilence", executorName, targetName]);
+        PlayerExtensions.PrintToAll(Localizer["Unsilence", executorName, targetName]);
         LogAction($"{executorName} unsilenced {targetName} ({target.SteamID})");
     }
 
@@ -566,7 +566,7 @@ public partial class AdminPlus
 
         if (caller != null && caller.IsValid && CheckImmunity(caller, target))
         {
-            caller.PrintToChat(Localizer["Punish.ImmunityBlocked"]);
+            caller.Print(Localizer["Punish.ImmunityBlocked"]);
             return;
         }
 
@@ -593,9 +593,9 @@ public partial class AdminPlus
         string targetName = SanitizeName(target.PlayerName);
 
         if (duration == 0)
-            Server.PrintToChatAll(Localizer[$"Perma{type}Reason", executorName, targetName, reason]);
+            PlayerExtensions.PrintToAll(Localizer[$"Perma{type}Reason", executorName, targetName, reason]);
         else
-            Server.PrintToChatAll(Localizer[$"{type}Reason", executorName, targetName, duration, reason]);
+            PlayerExtensions.PrintToAll(Localizer[$"{type}Reason", executorName, targetName, duration, reason]);
 
         LogAction($"{executorName} {type.ToLower()}ed {targetName} ({target.SteamID}) for {duration} minutes. Reason: {reason}");
     }
@@ -623,7 +623,7 @@ public partial class AdminPlus
         string executorName = GetExecutorName(caller);
         string targetName = SanitizeName(target.PlayerName);
 
-        Server.PrintToChatAll(Localizer[$"Un{type.ToLower()}", executorName, targetName]);
+        PlayerExtensions.PrintToAll(Localizer[$"Un{type.ToLower()}", executorName, targetName]);
         LogAction($"{executorName} un{type.ToLower()}ed {targetName} ({target.SteamID})");
     }
 
@@ -652,14 +652,14 @@ public partial class AdminPlus
 
         if (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/chat"))
         {
-            if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]);
+            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
             return;
         }
 
-        var menu = new CenterHtmlMenu(Localizer["MuteList.Header"], this);
+        var menu = CreateMenu(Localizer["MuteList.Header"]);
         if (!activeMutes.Any())
         {
-            menu.AddMenuOption(Localizer["MuteList.Empty"], (ply, opt) => { });
+            menu?.AddMenuOption(Localizer["MuteList.Empty"], (ply, opt) => { });
         }
         else
         {
@@ -668,12 +668,15 @@ public partial class AdminPlus
                 string duration = mute.IsPermanent ? Localizer["Duration.Forever"] : $"{mute.Duration} {Localizer["Duration.Minute"]}";
                 string remaining = mute.IsPermanent ? Localizer["Duration.Forever"] : $"{(mute.EndTime - DateTime.Now).TotalMinutes:F0} {Localizer["Duration.Minute"]}";
 
-                menu.AddMenuOption(Localizer["MuteList.Item", mute.PlayerName, duration, remaining], (ply, opt) => { });
+                menu?.AddMenuOption(Localizer["MuteList.Item", mute.PlayerName, duration, remaining], (ply, opt) => { });
             }
         }
 
-        menu.ExitButton = true;
-        menu.Open(caller);
+        if (menu != null)
+        {
+            menu.ExitButton = true;
+            OpenMenu(caller, menu);
+        }
     }
 
     private void CmdGagList(CCSPlayerController? caller, CommandInfo info)
@@ -701,14 +704,14 @@ public partial class AdminPlus
 
         if (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/chat"))
         {
-            if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]);
+            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
             return;
         }
 
-        var menu = new CenterHtmlMenu(Localizer["GagList.Header"], this);
+        var menu = CreateMenu(Localizer["GagList.Header"]);
         if (!activeGags.Any())
         {
-            menu.AddMenuOption(Localizer["GagList.Empty"], (ply, opt) => { });
+            menu?.AddMenuOption(Localizer["GagList.Empty"], (ply, opt) => { });
         }
         else
         {
@@ -717,12 +720,15 @@ public partial class AdminPlus
                 string duration = gag.IsPermanent ? Localizer["Duration.Forever"] : $"{gag.Duration} {Localizer["Duration.Minute"]}";
                 string remaining = gag.IsPermanent ? Localizer["Duration.Forever"] : $"{(gag.EndTime - DateTime.Now).TotalMinutes:F0} {Localizer["Duration.Minute"]}";
 
-                menu.AddMenuOption(Localizer["GagList.Item", gag.PlayerName, duration, remaining], (ply, opt) => { });
+                menu?.AddMenuOption(Localizer["GagList.Item", gag.PlayerName, duration, remaining], (ply, opt) => { });
             }
         }
 
-        menu.ExitButton = true;
-        menu.Open(caller);
+        if (menu != null)
+        {
+            menu.ExitButton = true;
+            OpenMenu(caller, menu);
+        }
     }
 
     private HookResult OnPlayerSay(CCSPlayerController? player, CommandInfo info)
@@ -749,18 +755,18 @@ public partial class AdminPlus
         {
             if (punishment.IsPermanent)
             {
-                player.PrintToChat(Localizer["Gag.Message.Permanent"]);
+                player.Print(Localizer["Gag.Message.Permanent"]);
             }
             else
             {
                 int remainingMinutes = (int)Math.Ceiling((punishment.EndTime - DateTime.Now).TotalMinutes);
                 remainingMinutes = Math.Max(0, remainingMinutes);
-                player.PrintToChat(Localizer["Gag.Message.Temporary", remainingMinutes]);
+                player.Print(Localizer["Gag.Message.Temporary", remainingMinutes]);
             }
         }
         else
         {
-            player.PrintToChat(Localizer["Gag.Message.Permanent"]);
+            player.Print(Localizer["Gag.Message.Permanent"]);
         }
 
         return HookResult.Stop;
@@ -845,7 +851,7 @@ public partial class AdminPlus
     {
         if (caller != null && (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/root")))
         {
-            if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]);
+            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
             return;
         }
 
@@ -869,7 +875,7 @@ public partial class AdminPlus
         string message = $"[AdminPlus] Expired punishment cleanup completed. Cleaned: {cleanedCount}, Remaining: {afterCount}";
         
         if (caller != null && caller.IsValid)
-            caller.PrintToChat(message);
+            caller.Print(message);
         else
             Console.WriteLine(message);
     }
@@ -878,7 +884,7 @@ public partial class AdminPlus
     {
         if (caller != null && (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/root")))
         {
-            if (caller.IsValid) caller.PrintToChat(Localizer["NoPermission"]);
+            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
             return;
         }
 
@@ -897,7 +903,7 @@ public partial class AdminPlus
         SaveCommunicationData();
         
         if (caller != null && caller.IsValid)
-            caller.PrintToChat(Localizer["CleanAll.Success", beforeCount, 0]);
+            caller.Print(Localizer["CleanAll.Success", beforeCount, 0]);
         else
             Console.WriteLine(Localizer["CleanAll.Console", beforeCount, 0]);
     }

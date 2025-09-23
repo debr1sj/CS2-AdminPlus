@@ -128,7 +128,7 @@ public partial class AdminPlus
         AddCommand(name, usage, (caller, info) =>
         {
             if (caller != null && caller.IsValid && !AdminManager.PlayerHasPermissions(caller, perm))
-            { caller.PrintToChat(Localizer["NoPermission"]); return; }
+            { caller.Print(Localizer["NoPermission"]); return; }
             handler(caller, info);
         });
     }
@@ -232,7 +232,7 @@ public partial class AdminPlus
             msg = Localizer[key1, args];
 
         foreach (var pl in Utilities.GetPlayers())
-            if (pl.IsValid) pl.PrintToChat(msg);
+            if (pl.IsValid) pl.Print(msg);
     }
 
     private void RememberTimer(CCSPlayerController p, FunTimer key, Timer t)
@@ -549,9 +549,12 @@ public partial class AdminPlus
         var cvar = ConVar.Find("sv_gravity");
         if (cvar == null) { SendErrorMessage(caller, "CvarNotFound", Localizer["CvarNotFound", "sv_gravity"]); return; }
 
+        var oldValue = cvar.GetPrimitiveValue<float>();
         Server.ExecuteCommand($"sv_gravity {value}");
         var admin = (caller == null || !caller.IsValid) ? Localizer["Console"] : caller.PlayerName;
-        Server.PrintToChatAll(Localizer["Cvar changed", admin, "sv_gravity", value]);
+        string message = Localizer["Cvar.Changed", admin, oldValue.ToString(), value.ToString()];
+        
+        PlayerExtensions.PrintToAll(message);
     }
 
     private void CmdRespawn(CCSPlayerController? caller, CommandInfo info)
@@ -658,12 +661,12 @@ public partial class AdminPlus
         if (teamTok is "ct" or "cts" or "counter" or "counterterrorist")
         {
             _ctDefaultHealth = hp;
-            Server.PrintToChatAll(Localizer["css_sethp", Localizer["Team.CT"], hp]);
+            PlayerExtensions.PrintToAll(Localizer["css_sethp", Localizer["Team.CT"], hp]);
         }
         else if (teamTok is "t" or "ts" or "terrorist")
         {
             _tDefaultHealth = hp;
-            Server.PrintToChatAll(Localizer["css_sethp", Localizer["Team.T"], hp]);
+            PlayerExtensions.PrintToAll(Localizer["css_sethp", Localizer["Team.T"], hp]);
         }
         else { SendErrorMessage(caller, "NoTeam", Localizer["NoTeam"]); }
     }
@@ -723,7 +726,7 @@ public partial class AdminPlus
         };
         if (team == CsTeam.None) { SendErrorMessage(caller, "NoTeam", Localizer["NoTeam"]); return; }
         foreach (var t in players) t.ChangeTeam(team);
-        Server.PrintToChatAll(Localizer["css_team", admin, label, TeamDisplay(team == CsTeam.Terrorist ? TargetScope.TeamT : team == CsTeam.CounterTerrorist ? TargetScope.TeamCT : TargetScope.TeamSpec)]);
+        PlayerExtensions.PrintToAll(Localizer["css_team", admin, label, TeamDisplay(team == CsTeam.Terrorist ? TargetScope.TeamT : team == CsTeam.CounterTerrorist ? TargetScope.TeamCT : TargetScope.TeamSpec)]);
     }
 
     private void CmdSwap(CCSPlayerController? caller, CommandInfo info)
@@ -734,7 +737,7 @@ public partial class AdminPlus
         var t = players[0];
         var newTeam = t.Team == CsTeam.CounterTerrorist ? CsTeam.Terrorist : CsTeam.CounterTerrorist;
         t.ChangeTeam(newTeam);
-        Server.PrintToChatAll(Localizer["css_swap", admin, label]);
+        PlayerExtensions.PrintToAll(Localizer["css_swap", admin, label]);
     }
 
     private void CmdBury(CCSPlayerController? caller, CommandInfo info)
@@ -785,7 +788,7 @@ public partial class AdminPlus
 
         var fallback = _menuInvokerName;
         var admin = (caller == null || !caller.IsValid) ? (string.IsNullOrEmpty(fallback) ? Localizer["Console"] : fallback) : caller.PlayerName;
-        Server.PrintToChatAll(Localizer["css_clean", admin]);
+        PlayerExtensions.PrintToAll(Localizer["css_clean", admin]);
     }
 
     private void CmdGoto(CCSPlayerController? caller, CommandInfo info)
@@ -817,7 +820,7 @@ public partial class AdminPlus
         var forward = new Vector((float)Math.Cos(yaw), (float)Math.Sin(yaw), 0f);
         var dest = new Vector(pos.X + forward.X * 80f, pos.Y + forward.Y * 80f, pos.Z + 5f);
         adminPawn.Teleport(dest, adminPawn.AbsRotation, new Vector(0, 0, 0));
-        effectiveInvoker.PrintToChat(Localizer["css_goto", effectiveInvoker.PlayerName ?? effectiveInvoker.SteamID.ToString(), target.PlayerName ?? target.SteamID.ToString()]);
+        effectiveInvoker.Print(Localizer["css_goto", effectiveInvoker.PlayerName ?? effectiveInvoker.SteamID.ToString(), target.PlayerName ?? target.SteamID.ToString()]);
     }
 
     private void CmdBring(CCSPlayerController? caller, CommandInfo info)
@@ -862,13 +865,29 @@ public partial class AdminPlus
         var t = players[0];
         if (_lastDeathPosFun.TryGetValue(t.SteamID, out var v) || t.TryGetLastCoord(out v))
         {
+            // Z koordinatını biraz yükselt (yere gömülmemesi için)
+            var adjustedPos = new Vector(v.X, v.Y, v.Z + 10);
+            
             SafeRespawn(t);
-            void tp() { var pawn = t.PlayerPawn?.Value; if (pawn != null) pawn.Teleport(v, pawn.AbsRotation, new Vector(0, 0, 0)); }
-            AddTimer(0.05f, tp);
-            AddTimer(0.15f, tp);
-            AddTimer(0.30f, tp);
+            
+            // Teleport işlemini daha güvenilir hale getir
+            void tp() 
+            { 
+                var pawn = t.PlayerPawn?.Value; 
+                if (pawn != null && pawn.IsValid && t.IsValid) 
+                {
+                    // Teleport et
+                    pawn.Teleport(adjustedPos, pawn.AbsRotation, new Vector(0, 0, 0));
+                }
+            }
+            
+            // Daha uzun sürelerle teleport et
+            AddTimer(0.2f, tp);
+            AddTimer(0.5f, tp);
+            AddTimer(1.0f, tp);
+            AddTimer(1.5f, tp);
 
-            Server.PrintToChatAll(Localizer["css_hrespawn", admin, label]);
+            PlayerExtensions.PrintToAll(Localizer["css_hrespawn", admin, label]);
         }
         else SendErrorMessage(caller, "NoDeathPos", Localizer["NoDeathPos"]);
     }
@@ -883,13 +902,13 @@ public partial class AdminPlus
         if (colorArg == "off")
         {
             foreach (var t in players) GlowPawn(t, Color.White);
-            Server.PrintToChatAll(Localizer["css_glow_off", admin, label]);
+            PlayerExtensions.PrintToAll(Localizer["css_glow_off", admin, label]);
         }
         else
         {
             if (!TryParseColor(colorArg, out var color)) { SendErrorMessage(caller, "ColorNotFound", Localizer["ColorNotFound"]); return; }
             foreach (var t in players) GlowPawn(t, color);
-            Server.PrintToChatAll(Localizer["css_glow", admin, label, colorArg]);
+            PlayerExtensions.PrintToAll(Localizer["css_glow", admin, label, colorArg]);
         }
     }
 
@@ -903,13 +922,13 @@ public partial class AdminPlus
         if (colorArg == "off")
         {
             foreach (var t in players) GlowPawn(t, Color.White);
-            Server.PrintToChatAll(Localizer["css_color_off", admin, label]);
+            PlayerExtensions.PrintToAll(Localizer["css_color_off", admin, label]);
         }
         else
         {
             if (!TryParseColor(colorArg, out var color)) { SendErrorMessage(caller, "ColorNotFound", Localizer["ColorNotFound"]); return; }
             foreach (var t in players) GlowPawn(t, color);
-            Server.PrintToChatAll(Localizer["css_color", admin, label, colorArg]);
+            PlayerExtensions.PrintToAll(Localizer["css_color", admin, label, colorArg]);
         }
     }
 
@@ -953,7 +972,7 @@ public partial class AdminPlus
             if (_activeShakes.TryGetValue(t.SteamID, out var sh) && sh != null && sh.IsValid)
             { try { sh.AcceptInput("StopShake"); sh.Remove(); } catch { } _activeShakes.Remove(t.SteamID); }
         }
-        Server.PrintToChatAll(Localizer["css_unshake", admin, label]);
+        PlayerExtensions.PrintToAll(Localizer["css_unshake", admin, label]);
     }
 
     private void CmdBlind(CCSPlayerController? caller, CommandInfo info)
@@ -985,7 +1004,7 @@ public partial class AdminPlus
         if (!ResolveTargets(caller, info.GetArg(1), true, true, false, out var players, out var admin, out var label, out _, true))
         { SendErrorMessage(caller, "OnlyAlive", Localizer["OnlyAlive"]); return; }
         foreach (var t in players) { OverlayBlindOff(t); StopTimer(t, FunTimer.Blind); }
-        Server.PrintToChatAll(Localizer["css_unblind", admin, label]);
+        PlayerExtensions.PrintToAll(Localizer["css_unblind", admin, label]);
     }
 
     private void CmdDrug(CCSPlayerController? caller, CommandInfo info)

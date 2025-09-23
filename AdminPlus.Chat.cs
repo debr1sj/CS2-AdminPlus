@@ -94,7 +94,7 @@ public partial class AdminPlus
                 var parts = raw.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
                 if (parts.Length < 2)
                 {
-                    caller.PrintToChat(Localizer["Psay.Usage"]);
+                    caller.Print(Localizer["Psay.Usage"]);
                     return HookResult.Handled;
                 }
                 var token = parts[0];
@@ -102,7 +102,7 @@ public partial class AdminPlus
                 var target = FindPlayerByNameOrId(token);
                 if (target == null || !target.IsValid)
                 {
-                    caller.PrintToChat(Localizer["NoMatchingClient"]);
+                    caller.Print(Localizer["NoMatchingClient"]);
                     return HookResult.Handled;
                 }
                 SendPSay(caller, target, msg);
@@ -160,13 +160,13 @@ public partial class AdminPlus
     private void CmdASay(CCSPlayerController? caller, CommandInfo info)
     {
         if (caller != null && (!caller.IsValid || !HasChatPermission(caller))) return;
-        if (info.ArgCount < 2) { if (caller != null) caller.PrintToChat(Localizer["Asay.Usage"]); else Console.WriteLine(Localizer["Asay.UsageConsole"]); return; }
+        if (info.ArgCount < 2) { if (caller != null) caller.Print(Localizer["Asay.Usage"]); else Console.WriteLine(Localizer["Asay.UsageConsole"]); return; }
         var msg = info.ArgString?.Trim() ?? "";
         if (caller == null)
         {
             var line = string.Format(CultureInfo.InvariantCulture, Localizer["css_asay"], Localizer["Console"], msg).ReplaceColorTags();
             foreach (var a in Utilities.GetPlayers()!.Where(p => p.IsValid && !p.IsBot && AdminManager.PlayerHasPermissions(p, ChatPerm)))
-                a.PrintToChat(line);
+                a.Print(line);
             return;
         }
         SendASay(caller, msg);
@@ -175,7 +175,7 @@ public partial class AdminPlus
     private void CmdCSay(CCSPlayerController? caller, CommandInfo info)
     {
         if (caller != null && (!caller.IsValid || !HasChatPermission(caller))) return;
-        if (info.ArgCount < 2) { if (caller != null) caller.PrintToChat(Localizer["Csay.Usage"]); else Console.WriteLine(Localizer["Csay.UsageConsole"]); return; }
+        if (info.ArgCount < 2) { if (caller != null) caller.Print(Localizer["Csay.Usage"]); else Console.WriteLine(Localizer["Csay.UsageConsole"]); return; }
         var msg = info.ArgString?.Trim() ?? "";
         if (caller == null) { Console.WriteLine("[AdminPlus] csay: " + msg); return; }
         SendCSay(caller, msg);
@@ -184,7 +184,7 @@ public partial class AdminPlus
     private void CmdHSay(CCSPlayerController? caller, CommandInfo info)
     {
         if (caller != null && (!caller.IsValid || !HasChatPermission(caller))) return;
-        if (info.ArgCount < 2) { if (caller != null) caller.PrintToChat(Localizer["Hsay.Usage"]); else Console.WriteLine(Localizer["Hsay.UsageConsole"]); return; }
+        if (info.ArgCount < 2) { if (caller != null) caller.Print(Localizer["Hsay.Usage"]); else Console.WriteLine(Localizer["Hsay.UsageConsole"]); return; }
         var msg = info.ArgString?.Trim() ?? "";
         if (caller == null) { Console.WriteLine("[AdminPlus] hsay: " + msg); return; }
         SendHSay(caller, msg);
@@ -195,7 +195,7 @@ public partial class AdminPlus
         if (caller != null && (!caller.IsValid || !HasChatPermission(caller))) return;
         if (info.ArgCount < 3)
         {
-            if (caller != null) caller.PrintToChat(Localizer["Psay.Usage"]);
+            if (caller != null) caller.Print(Localizer["Psay.Usage"]);
             else Console.WriteLine(Localizer["Psay.UsageConsole"]);
             return;
         }
@@ -203,20 +203,20 @@ public partial class AdminPlus
         var msg = string.Join(' ', Enumerable.Range(2, info.ArgCount - 2).Select(i => info.GetArg(i)));
         var target = FindPlayerByNameOrId(token);
         if (target == null || !target.IsValid)
-        { if (caller != null) caller.PrintToChat(Localizer["NoMatchingClient"]); else Console.WriteLine(Localizer["NoMatchingClient"]); return; }
-        if (caller == null) { Console.WriteLine($"[AdminPlus] psay to {target.PlayerName}: {msg}"); target.PrintToChat(msg); return; }
+        { if (caller != null) caller.Print(Localizer["NoMatchingClient"]); else Console.WriteLine(Localizer["NoMatchingClient"]); return; }
+        if (caller == null) { Console.WriteLine($"[AdminPlus] psay to {target.PlayerName}: {msg}"); target.Print(msg); return; }
         SendPSay(caller, target, msg);
     }
 
     private void CmdSayAll(CCSPlayerController? caller, CommandInfo info)
     {
         if (caller != null && (!caller.IsValid || !HasChatPermission(caller))) return;
-        if (info.ArgCount < 2) { if (caller != null) caller.PrintToChat(Localizer["Say.Usage"]); else Console.WriteLine(Localizer["Say.UsageConsole"]); return; }
+        if (info.ArgCount < 2) { if (caller != null) caller.Print(Localizer["Say.Usage"]); else Console.WriteLine(Localizer["Say.UsageConsole"]); return; }
         var msg = info.ArgString?.Trim() ?? "";
         if (caller == null)
         {
             var line = string.Format(CultureInfo.InvariantCulture, Localizer["css_say"], Localizer["Console"], msg).ReplaceColorTags();
-            Server.PrintToChatAll(line);
+            PlayerExtensions.PrintToAll(line);
             return;
         }
         SendSayAll(caller, msg);
