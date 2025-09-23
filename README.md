@@ -320,6 +320,7 @@ If you encounter any issues or bugs:
 ### 💬 **Contact & Support**
 - **GitHub Issues**: [Create an issue](https://github.com/debr1sj/CS2-AdminPlus/issues)
 - **Discord**: debr1s
+- **Steam Trade**: [🔗 Trade with me](https://steamcommunity.com/tradeoffer/new/?partner=888667064&token=hfAqp-37) - If you want to support the project
 - **Documentation**: Check this README for common solutions
 
 ### 🔧 **Common Issues**
