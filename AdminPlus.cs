@@ -23,14 +23,12 @@ using MenuManager;
 
 namespace AdminPlus;
 
-// AdminPlus artık config dosyası oluşturmuyor
-// MenuManager'ın kendi config dosyasını kullanıyor
 
 [MinimumApiVersion(78)]
 public partial class AdminPlus : BasePlugin
 {
     public override string ModuleName => "AdminPlus";
-    public override string ModuleVersion => "1.0.0";
+    public override string ModuleVersion => "1.0.2";
     public override string ModuleAuthor => "debr1sj";
 
     internal static string BannedUserPath = string.Empty;
@@ -39,12 +37,12 @@ public partial class AdminPlus : BasePlugin
     internal static Dictionary<string, (long expiry, string line, string nick)> IpBans = new();
     internal static object _lock = new();
     internal static Dictionary<ulong, (string name, string ip)> DisconnectedPlayers = new();
+    private const int MAX_DISCONNECTED_PLAYERS = 50;
 
     private Timer? cleanupTimer;
     internal static AdminPlus? _instance;
     private bool _communicationInitialized = false;
     
-    // MenuManager API
     internal static IMenuApi? MenuApi;
     private static readonly PluginCapability<IMenuApi> MenuCapability = new("menu:nfcore");
     
@@ -91,7 +89,6 @@ public partial class AdminPlus : BasePlugin
     {
         base.OnAllPluginsLoaded(hotReload);
         
-        // MenuManager API'yi yükle
         MenuApi = MenuCapability.Get();
         if (MenuApi != null)
         {
@@ -111,7 +108,7 @@ public partial class AdminPlus : BasePlugin
             var player = Utilities.GetPlayerFromSlot(slot);
             if (player != null && player.IsValid && !player.IsBot)
             {
-                if (DisconnectedPlayers.Count >= 50)
+                if (DisconnectedPlayers.Count >= MAX_DISCONNECTED_PLAYERS)
                     DisconnectedPlayers.Remove(DisconnectedPlayers.Keys.First());
 
                 DisconnectedPlayers[player.SteamID] = (player.PlayerName, player.IpAddress ?? "-");
@@ -129,16 +126,6 @@ public partial class AdminPlus : BasePlugin
             }
         });
 
-        // MenuManager API'yi yükle
-        try
-        {
-            MenuApi = MenuCapability.Get();
-            Console.WriteLine("[AdminPlus] MenuManager API loaded successfully!");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[AdminPlus] Failed to load MenuManager API: {ex.Message}");
-        }
 
         RegisterEventHandler<EventPlayerDeath>((@event, info) =>
         {
@@ -242,6 +229,10 @@ public partial class AdminPlus : BasePlugin
                         }
                     }
                 }
+                else
+                {
+                    CreateEmptyBanFile(BannedUserPath, "SteamID");
+                }
 
                 if (File.Exists(BannedIpPath))
                 {
@@ -254,6 +245,10 @@ public partial class AdminPlus : BasePlugin
                         }
                     }
                 }
+                else
+                {
+                    CreateEmptyBanFile(BannedIpPath, "IP");
+                }
 
                 Console.WriteLine($"[AdminPlus] Loaded {steamCount} Steam bans and {ipCount} IP bans");
             }
@@ -261,6 +256,45 @@ public partial class AdminPlus : BasePlugin
             {
                 Console.WriteLine($"[AdminPlus] Failed to load ban files: {ex.Message}");
             }
+        }
+    }
+
+    private void CreateEmptyBanFile(string filePath, string banType)
+    {
+        try
+        {
+            if (File.Exists(filePath))
+            {
+                Console.WriteLine($"[AdminPlus] {banType.ToLower()} ban file already exists, skipping creation.");
+                return;
+            }
+
+            var directory = Path.GetDirectoryName(filePath);
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            string header;
+            if (banType == "SteamID")
+            {
+                header = $"// {banType} ban list - AdminPlus\n" +
+                        $"// Format: banid \"STEAM_ID\" \"PLAYER_NAME\" ip:IP_ADDRESS expiry:EXPIRY_TIME // REASON\n" +
+                        $"// Example: banid \"STEAM_1:0:123456789\" \"PlayerName\" ip:192.168.1.1 expiry:0 // Cheating\n\n";
+            }
+            else
+            {
+                header = $"// {banType} ban list - AdminPlus\n" +
+                        $"// Format: addip \"IP_ADDRESS\" expiry:0 // REASON\n" +
+                        $"// Example: addip \"192.168.1.1\" expiry:0 // Cheating\n\n";
+            }
+
+            File.WriteAllText(filePath, header);
+            Console.WriteLine($"[AdminPlus] Created empty {banType.ToLower()} ban file: {filePath}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[AdminPlus] Failed to create {banType.ToLower()} ban file: {ex.Message}");
         }
     }
 
@@ -492,7 +526,6 @@ public partial class AdminPlus : BasePlugin
         Console.WriteLine(message);
     }
     
-    // MenuManager API Helper Methods
     internal static IMenu? CreateMenu(string title, Action<CCSPlayerController>? backAction = null)
     {
         if (MenuApi == null)
@@ -501,7 +534,6 @@ public partial class AdminPlus : BasePlugin
             return _instance != null ? new CenterHtmlMenu(title, _instance) : null;
         }
 
-        // MenuManager'ın varsayılan menü tipini kullan
         return MenuApi?.GetMenu(title);
     }
 
@@ -546,10 +578,8 @@ public static class PlayerExtensions
                 var prefix = AdminPlus._instance?.Localizer?["ap_prefix"] ?? "";
                 string fullMessage = !string.IsNullOrEmpty(prefix) ? $"{prefix} {message}" : message;
                 
-                // Sunucu tam olarak başlamadan önce güvenli kontrol
                 if (Server.MaxPlayers <= 0)
                 {
-                    // Sunucu henüz hazır değilse sadece console'a yazdır
                     Console.WriteLine($"[AdminPlus] {fullMessage}");
                     return;
                 }
@@ -561,7 +591,6 @@ public static class PlayerExtensions
             }
             catch (Exception ex)
             {
-                // Hata durumunda console'a yazdır
                 Console.WriteLine($"[AdminPlus] PrintToAll Error: {ex.Message}");
                 Console.WriteLine($"[AdminPlus] {message}");
             }

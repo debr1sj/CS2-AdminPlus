@@ -9,7 +9,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-#pragma warning disable CS8602 // Olası null başvurunun başvurma işlemi
 using System.Linq;
 using System.Text.Json.Nodes;
 using System.Drawing;
@@ -39,7 +38,10 @@ public partial class AdminPlus
     public void RegisterMenuCommands()
     {
         AddCommand("admin", Localizer["Menu.AdminDesc"], AdminMenu);
+        AddCommand("css_admin", "Open admin menu from console", AdminMenu);
+        AddCommand("css_adminmenu", "Open admin menu from console", AdminMenu);
         AddCommand("banlist", Localizer["BanList.Header"], BanListMenu);
+        AddCommand("css_banlist", "Show ban list menu from console", BanListMenu);
     }
 
     private string GetExecutorNameMenu(CCSPlayerController? caller)
@@ -49,7 +51,19 @@ public partial class AdminPlus
 
     public void AdminMenu(CCSPlayerController? caller, CommandInfo info)
     {
-        if (caller == null || !caller.IsValid) return;
+        bool isConsoleCommand = caller == null;
+        
+        if (isConsoleCommand)
+        {
+            Console.WriteLine("[AdminPlus] Admin menu opened from console.");
+            return;
+        }
+        
+        if (caller == null || !caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic"))
+        {
+            caller?.Print(Localizer["NoPermission"]);
+            return;
+        }
 
         if (!AdminManager.PlayerHasPermissions(caller, "@css/ban"))
         {
@@ -60,7 +74,6 @@ public partial class AdminPlus
         var menu = CreateMenu(Localizer["Menu.Title"]);
         List<ChatMenuOptionData> options = [];
 
-        // SimpleAdmin'deki gibi menü seçeneklerini oluştur
         if (AdminManager.PlayerHasPermissions(caller, "@css/root"))
             options.Add(new ChatMenuOptionData(Localizer["Menu.Option.AdminManage"], () => ShowAdminManageMenu(caller)));
 
@@ -68,7 +81,6 @@ public partial class AdminPlus
         options.Add(new ChatMenuOptionData(Localizer["Menu.Option.PlayerCommands"], () => ShowPlayerCommands(caller)));
         options.Add(new ChatMenuOptionData(Localizer["Menu.Fun.Title"], () => ShowFunRootMenu(caller)));
 
-        // Menü seçeneklerini ekle
         foreach (var menuOptionData in options)
         {
             var menuName = menuOptionData.Name;
@@ -91,12 +103,13 @@ public partial class AdminPlus
         }
 
         var m = CreateMenu(Localizer["Menu.Fun.Title"]);
-        m?.AddMenuOption(Localizer["Menu.Fun.Cat.Teleport"], (p, o) => ShowFunTeleportMenu(admin));
-        m?.AddMenuOption(Localizer["Menu.Fun.Cat.PlayerFx"], (p, o) => ShowFunPlayerFxMenu(admin));
-        m?.AddMenuOption(Localizer["Menu.Fun.Cat.Weapons"], (p, o) => ShowFunWeaponsMenu(admin));
-        m?.AddMenuOption(Localizer["Menu.Fun.Cat.Physics"], (p, o) => ShowFunPhysicsMenu(admin));
-        m?.AddMenuOption(Localizer["Menu.Fun.Cat.Visual"], (p, o) => ShowFunVisualMenu(admin));
-        if (m != null)
+        if (m == null) return;
+        
+        m.AddMenuOption(Localizer["Menu.Fun.Cat.Teleport"], (p, o) => ShowFunTeleportMenu(admin));
+        m.AddMenuOption(Localizer["Menu.Fun.Cat.PlayerFx"], (p, o) => ShowFunPlayerFxMenu(admin));
+        m.AddMenuOption(Localizer["Menu.Fun.Cat.Weapons"], (p, o) => ShowFunWeaponsMenu(admin));
+        m.AddMenuOption(Localizer["Menu.Fun.Cat.Physics"], (p, o) => ShowFunPhysicsMenu(admin));
+        m.AddMenuOption(Localizer["Menu.Fun.Cat.Visual"], (p, o) => ShowFunVisualMenu(admin));
         {
             m.ExitButton = true;
             OpenMenu(admin, m);
@@ -112,6 +125,7 @@ public partial class AdminPlus
     private void ShowTargetMenu(CCSPlayerController admin, string title, Action<string> onPicked, bool onlyAlive = true, bool onlyDead = false)
     {
         var m = CreateMenu(title);
+        if (m == null) return;
 
         var players = GetAllPlayers();
         if (onlyAlive) players = players.Where(p => p.PawnIsAlive);
@@ -138,9 +152,10 @@ public partial class AdminPlus
     private void ShowToggleMenu(CCSPlayerController admin, string title, Action<int> onPicked)
     {
         var m = CreateMenu(title);
-        m?.AddMenuOption(Localizer["On"], (p, o) => onPicked(1));
-        m?.AddMenuOption(Localizer["Off"], (p, o) => onPicked(0));
-        if (m != null)
+        if (m == null) return;
+        
+        m.AddMenuOption(Localizer["On"], (p, o) => onPicked(1));
+        m.AddMenuOption(Localizer["Off"], (p, o) => onPicked(0));
         {
             m.ExitButton = true;
             OpenMenu(admin, m);
@@ -150,9 +165,10 @@ public partial class AdminPlus
     private void ShowNumberMenu(CCSPlayerController admin, string title, IEnumerable<string> options, Action<string> onPicked)
     {
         var m = CreateMenu(title);
+        if (m == null) return;
+        
         foreach (var opt in options)
-            m?.AddMenuOption(opt, (p, o) => onPicked(opt));
-        if (m != null)
+            m.AddMenuOption(opt, (p, o) => onPicked(opt));
         {
             m.ExitButton = true;
             OpenMenu(admin, m);
@@ -169,6 +185,7 @@ public partial class AdminPlus
     private void ShowFunTeleportMenu(CCSPlayerController admin)
     {
         var m = CreateMenu(Localizer["Menu.Fun.Cat.Teleport"]);
+        if (m == null) return;
 
         m.AddMenuOption(Localizer["Menu.Fun.Teleport.Goto"], (p, o) =>
         {
@@ -200,6 +217,7 @@ public partial class AdminPlus
     private void ShowFunPlayerFxMenu(CCSPlayerController admin)
     {
         var m = CreateMenu(Localizer["Menu.Fun.Cat.PlayerFx"]);
+        if (m == null) return;
 
         m.AddMenuOption(Localizer["Menu.Fun.PlayerFx.Beacon"], (p, o) =>
         {
@@ -271,6 +289,7 @@ public partial class AdminPlus
     private void ShowFunWeaponsMenu(CCSPlayerController admin)
     {
         var m = CreateMenu(Localizer["Menu.Fun.Cat.Weapons"]);
+        if (m == null) return;
 
         m.AddMenuOption(Localizer["Menu.Fun.Weapons.Weapon"], (p, o) =>
         {
@@ -321,6 +340,7 @@ public partial class AdminPlus
     private void ShowFunPhysicsMenu(CCSPlayerController admin)
     {
         var m = CreateMenu(Localizer["Menu.Fun.Cat.Physics"]);
+        if (m == null) return;
 
         m.AddMenuOption(Localizer["Menu.Fun.Physics.Noclip"], (p, o) =>
         {
@@ -376,6 +396,8 @@ public partial class AdminPlus
         m.AddMenuOption(Localizer["Menu.Fun.Physics.SetHp"], (p, o) =>
         {
             var tm = CreateMenu(Localizer["Menu.Fun.Prompt.SetHpTeam"]);
+            if (tm == null) return;
+            
             tm.AddMenuOption("Terrorist Team", (pp, oo) => ShowNumberMenu(admin, Localizer["Menu.Fun.Prompt.Hp"], new[] { "50", "100", "150", "200" }, hp => RunServerCmd(admin, $"css_sethp t {hp}")));
             tm.AddMenuOption("CT Team", (pp, oo) => ShowNumberMenu(admin, Localizer["Menu.Fun.Prompt.Hp"], new[] { "50", "100", "150", "200" }, hp => RunServerCmd(admin, $"css_sethp ct {hp}")));
             tm.ExitButton = true;
@@ -392,6 +414,7 @@ public partial class AdminPlus
     private void ShowFunVisualMenu(CCSPlayerController admin)
     {
         var m = CreateMenu(Localizer["Menu.Fun.Cat.Visual"]);
+        if (m == null) return;
 
         m.AddMenuOption(Localizer["Menu.Fun.Visual.Glow"], (p, o) =>
         {
@@ -426,12 +449,15 @@ public partial class AdminPlus
     private void ShowFunTeamOpsMenu(CCSPlayerController admin)
     {
         var m = CreateMenu(Localizer["Menu.Fun.Cat.TeamOps"]);
+        if (m == null) return;
 
         m.AddMenuOption(Localizer["Menu.Fun.TeamOps.Team"], (p, o) =>
         {
             ShowTargetMenu(admin, Localizer["Menu.Fun.Prompt.SelectTarget"], target =>
             {
                 var tm = CreateMenu(Localizer["Menu.Fun.Prompt.Team"]);
+                if (tm == null) return;
+                
                 tm.AddMenuOption("Terrorist Team", (pp, oo) => RunServerCmd(admin, $"css_team {target} t"));
                 tm.AddMenuOption("CT Team", (pp, oo) => RunServerCmd(admin, $"css_team {target} ct"));
                 tm.AddMenuOption("Spectator", (pp, oo) => RunServerCmd(admin, $"css_team {target} spec"));
@@ -458,8 +484,9 @@ public partial class AdminPlus
     private void ShowFunCleanupMenu(CCSPlayerController admin)
     {
         var m = CreateMenu(Localizer["Menu.Fun.Cat.Cleanup"]);
+        if (m == null) return;
+        
         m.AddMenuOption(Localizer["Menu.Fun.Cleanup.Clean"], (p, o) => RunServerCmd(admin, "css_clean"));
-        if (m != null)
         {
             m.ExitButton = true;
             OpenMenu(admin, m);
@@ -512,6 +539,7 @@ public partial class AdminPlus
         }
 
         var menu = CreateMenu(Localizer["Menu.AdminManage"]);
+        if (menu == null) return;
 
         menu.AddMenuOption(Localizer["Menu.Option.AddAdmin"], (ply, opt) => ShowAddAdminPlayerMenu(admin));
         menu.AddMenuOption(Localizer["Menu.Option.RemoveAdmin"], (ply, opt) => OpenRemoveAdminMenu(admin));
@@ -530,6 +558,7 @@ public partial class AdminPlus
         }
 
         var menu = CreateMenu(Localizer["Menu.AdminAdd.ChoosePlayer"]);
+        if (menu == null) return;
 
         foreach (var p in Utilities.GetPlayers()!)
         {
@@ -556,6 +585,7 @@ public partial class AdminPlus
         }
 
         var menu = CreateMenu(Localizer["Menu.AdminAdd.ChooseGroup"]);
+        if (menu == null) return;
 
         var groups = new[] { "#css/root", "#css/admin", "#css/mod", "#css/vip" };
         foreach (var group in groups)
@@ -579,6 +609,7 @@ public partial class AdminPlus
         }
 
         var menu = CreateMenu(Localizer["Menu.AdminAdd.ChooseImmunity"]);
+        if (menu == null) return;
 
         var immLevels = new Dictionary<string, int>
         {
@@ -609,6 +640,7 @@ public partial class AdminPlus
         }
 
         var menu = CreateMenu(Localizer["Menu.AdminAdd.Confirm"]);
+        if (menu == null) return;
 
         string info = $"{playerName} [{steamId}]<br/>Grup: {group}<br/>Immunity: {immunity}";
         menu.AddMenuOption(Localizer["Menu.ConfirmYes"] + " → " + info, (ply, opt) =>
@@ -622,7 +654,6 @@ public partial class AdminPlus
             if (!ReadAdminsFile(out var root)) root = new JsonObject();
             if (root.ContainsKey(steamId))
             {
-                // SteamID64'ü SteamID3'e dönüştür
                 if (ulong.TryParse(steamId, out var steam64))
                 {
                     var steamId3 = ConvertToSteamID3(steam64);
@@ -664,6 +695,7 @@ public partial class AdminPlus
         }
 
         var menu = CreateMenu(Localizer["Menu.RemoveAdmin"]);
+        if (menu == null) return;
 
         if (!ReadAdminsFile(out var root) || root.Count == 0)
         {
@@ -703,6 +735,7 @@ public partial class AdminPlus
         }
 
         var menu = CreateMenu(Localizer["Menu.RemoveAdmin"]);
+        if (menu == null) return;
 
         string info = $"{name} [{steamId}] (Imm:{immunity})";
         menu.AddMenuOption(Localizer["Menu.ConfirmYes"] + " → " + info, (ply, opt) =>
@@ -737,6 +770,7 @@ public partial class AdminPlus
         }
 
         var menu = CreateMenu(Localizer["Admin.List.Header"]);
+        if (menu == null) return;
 
         if (!ReadAdminsFile(out var root) || root.Count == 0)
             menu.AddMenuOption(Localizer["Admin.List.Empty"], (ply, opt) => { });
@@ -773,7 +807,6 @@ public partial class AdminPlus
         var menu = CreateMenu(Localizer["Menu.PlayerCommands"]);
         List<ChatMenuOptionData> options = [];
 
-        // SimpleAdmin'deki gibi menü seçeneklerini oluştur
         options.Add(new ChatMenuOptionData(Localizer["Menu.Option.Ban"], () => ShowPlayerList(admin)));
         options.Add(new ChatMenuOptionData(Localizer["Menu.Option.Kick"], () => ShowKickPlayerMenu(admin)));
         options.Add(new ChatMenuOptionData(Localizer["Menu.Option.Slay"], () => ShowSlayMenu(admin)));
@@ -786,7 +819,6 @@ public partial class AdminPlus
         options.Add(new ChatMenuOptionData(Localizer["Menu.Option.Armor"], () => ShowArmorMenu(admin)));
         options.Add(new ChatMenuOptionData(Localizer["Menu.Fun.Cat.TeamOps"], () => ShowFunTeamOpsMenu(admin)));
 
-        // Menü seçeneklerini ekle
         foreach (var menuOptionData in options)
         {
             var menuName = menuOptionData.Name;
@@ -849,6 +881,7 @@ public partial class AdminPlus
         }
 
         var menu = CreateMenu(Localizer["Menu.KickPlayer"]);
+        if (menu == null) return;
 
         foreach (var p in Utilities.GetPlayers()!)
         {
@@ -880,6 +913,7 @@ public partial class AdminPlus
     private void ShowMutePlayerMenu(CCSPlayerController admin)
     {
         var menu = CreateMenu(Localizer["Menu.MutePlayer"]);
+        if (menu == null) return;
 
         foreach (var p in Utilities.GetPlayers()!)
         {
@@ -908,6 +942,7 @@ public partial class AdminPlus
     private void ShowGagPlayerMenu(CCSPlayerController admin)
     {
         var menu = CreateMenu(Localizer["Menu.GagPlayer"]);
+        if (menu == null) return;
 
         foreach (var p in Utilities.GetPlayers()!)
         {
@@ -936,6 +971,7 @@ public partial class AdminPlus
     private void ShowSilencePlayerMenu(CCSPlayerController admin)
     {
         var menu = CreateMenu(Localizer["Menu.SilencePlayer"]);
+        if (menu == null) return;
 
         foreach (var p in Utilities.GetPlayers()!)
         {
@@ -970,6 +1006,7 @@ public partial class AdminPlus
         }
 
         var menu = CreateMenu(Localizer["Menu.ChooseDuration"]);
+        if (menu == null) return;
 
         var durations = new Dictionary<string, int>
         {
@@ -1031,7 +1068,6 @@ public partial class AdminPlus
         var menu = CreateMenu(Localizer["Menu.ServerCommands"]);
         List<ChatMenuOptionData> options = [];
 
-        // SimpleAdmin'deki gibi menü seçeneklerini oluştur
         options.Add(new ChatMenuOptionData(Localizer["Menu.Option.ChangeMap"], () => ShowMapSelectionMenu(admin)));
         options.Add(new ChatMenuOptionData(Localizer["Menu.Fun.Cat.Cleanup"], () => ShowFunCleanupMenu(admin)));
         options.Add(new ChatMenuOptionData(Localizer["Menu.Option.RoundRestart"], () =>
@@ -1044,7 +1080,6 @@ public partial class AdminPlus
             else admin.Print(Localizer["NoPermission"]);
         }));
 
-        // Menü seçeneklerini ekle
         foreach (var menuOptionData in options)
         {
             var menuName = menuOptionData.Name;
@@ -1067,6 +1102,7 @@ public partial class AdminPlus
         }
 
         var menu = CreateMenu(Localizer["Menu.ChangeMap"]);
+        if (menu == null) return;
 
         foreach (var map in PredefinedMaps)
             menu.AddMenuOption(map, (ply, opt) => ShowConfirmChangeMapMenu(admin, map));
@@ -1084,6 +1120,7 @@ public partial class AdminPlus
         }
 
         var menu = CreateMenu(Localizer["Menu.ChangeMapConfirm"]);
+        if (menu == null) return;
 
         menu.AddMenuOption(Localizer["Menu.ConfirmYes"], (ply, opt) =>
         {
@@ -1124,6 +1161,7 @@ public partial class AdminPlus
         }
 
         var menu = CreateMenu(Localizer["Menu.ChoosePlayer"]);
+        if (menu == null) return;
 
         foreach (var p in Utilities.GetPlayers()!)
         {
@@ -1147,6 +1185,8 @@ public partial class AdminPlus
         }
 
         var menu = CreateMenu(Localizer["Menu.ChooseBanType"]);
+        if (menu == null) return;
+        
         menu.AddMenuOption(Localizer["Menu.Option.SteamIdBan"], (ply, opt) => ShowDurationMenu(admin, target));
         menu.AddMenuOption(Localizer["Menu.Option.IpBan"], (ply, opt) => ShowReasonMenu(admin, target, 0, true));
         menu.ExitButton = true;
@@ -1162,6 +1202,7 @@ public partial class AdminPlus
         }
 
         var menu = CreateMenu(Localizer["Menu.ChooseDuration"]);
+        if (menu == null) return;
 
         var durations = new Dictionary<string, int>
         {
@@ -1187,6 +1228,7 @@ public partial class AdminPlus
         }
 
         var menu = CreateMenu(Localizer["Menu.ChooseReason"]);
+        if (menu == null) return;
 
         var reasons = new[]
         {
@@ -1251,15 +1293,23 @@ public partial class AdminPlus
 
     private void BanListMenu(CCSPlayerController? caller, CommandInfo info)
     {
-        if (caller == null || !caller.IsValid) return;
-
-        if (!AdminManager.PlayerHasPermissions(caller, "@css/ban"))
+        bool isConsoleCommand = caller == null;
+        
+        if (isConsoleCommand)
         {
-            caller.Print(Localizer["NoPermission"]);
+            Console.WriteLine("[AdminPlus] Console ban list menu opened.");
+            return;
+        }
+        
+        if (caller == null || !caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/ban"))
+        {
+            caller?.Print(Localizer["NoPermission"]);
             return;
         }
 
         var root = CreateMenu(Localizer["Menu.BanList"]);
+        if (root == null) return;
+        
         root.AddMenuOption(Localizer["Menu.BanList.Steam"], (ply, opt) => ShowSteamBanListMenu(caller));
         root.AddMenuOption(Localizer["Menu.BanList.IP"], (ply, opt) => ShowIpBanListMenu(caller));
         root.ExitButton = true;
@@ -1270,6 +1320,7 @@ public partial class AdminPlus
     {
         if (!caller.IsValid) return;
         var menu = CreateMenu(Localizer["Menu.BanList.Steam"]);
+        if (menu == null) return;
 
         if (SteamBans.Count == 0)
         {
@@ -1292,6 +1343,7 @@ public partial class AdminPlus
     {
         if (!caller.IsValid) return;
         var menu = CreateMenu(Localizer["Menu.BanList.IP"]);
+        if (menu == null) return;
 
         if (IpBans.Count == 0)
         {
@@ -1349,7 +1401,6 @@ public partial class AdminPlus
     }
 }
 
-// SimpleAdmin'deki gibi ChatMenuOptionData sınıfı
 public class ChatMenuOptionData(string name, Action action, bool disabled = false)
 {
     public readonly string Name = name;

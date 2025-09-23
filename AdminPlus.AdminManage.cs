@@ -109,15 +109,17 @@ public partial class AdminPlus
 
     private void CmdAddAdmin(CCSPlayerController? caller, CommandInfo info)
     {
-        if (caller == null)
+        bool isConsoleCommand = caller == null;
+        
+        if (isConsoleCommand)
         {
-            Console.WriteLine("[AdminPlus] Panel admin add command executed.");
+            Console.WriteLine("[AdminPlus] Console admin add command executed.");
         }
         else
         {
-            if (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/root"))
+            if (caller == null || !caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/root"))
             {
-                if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
+                caller?.Print(Localizer["NoPermission"]);
                 return;
             }
         }
@@ -181,15 +183,17 @@ public partial class AdminPlus
 
     private void CmdRemoveAdmin(CCSPlayerController? caller, CommandInfo info)
     {
-        if (caller == null)
+        bool isConsoleCommand = caller == null;
+        
+        if (isConsoleCommand)
         {
-            Console.WriteLine("[AdminPlus] Panel admin remove command executed.");
+            Console.WriteLine("[AdminPlus] Console admin remove command executed.");
         }
         else
         {
-            if (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/root"))
+            if (caller == null || !caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/root"))
             {
-                if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
+                caller?.Print(Localizer["NoPermission"]);
                 return;
             }
         }
@@ -236,15 +240,17 @@ public partial class AdminPlus
 
     private void CmdAdminList(CCSPlayerController? caller, CommandInfo info)
     {
-        if (caller == null)
+        bool isConsoleCommand = caller == null;
+        
+        if (isConsoleCommand)
         {
-            Console.WriteLine("[AdminPlus] Panel admin list command executed.");
+            Console.WriteLine("[AdminPlus] Console admin list command executed.");
         }
         else
         {
-            if (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/root"))
+            if (caller == null || !caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/root"))
             {
-                if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
+                caller?.Print(Localizer["NoPermission"]);
                 return;
             }
         }

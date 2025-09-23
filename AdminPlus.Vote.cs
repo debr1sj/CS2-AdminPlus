@@ -8,8 +8,8 @@ using CounterStrikeSharp.API.Modules.Timers;
 using CounterStrikeSharp.API.ValveConstants.Protobuf;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 
-#pragma warning disable CS8602 // Olası null başvurunun başvurma işlemi
 using System.IO;
 using System.Linq;
 
@@ -32,6 +32,9 @@ public partial class AdminPlus
     private static CCSPlayerController? _targetPlayer = null;
     private static string _voteReason = "";
     private static int _voteDuration = 0;
+    private static string _voteMapName = "";
+    private static Dictionary<CCSPlayerController, int> _playerMenuPositions = new();
+    private static HashSet<CCSPlayerController> _playersWhoClosedMenu = new();
 
     public enum VoteType
     {
@@ -135,7 +138,7 @@ public partial class AdminPlus
             return;
         }
 
-        if (info.ArgCount < 3)
+        if (info.ArgCount < 2)
         {
             string usage = Localizer["VoteMap.Usage"];
             if (caller != null && caller.IsValid)
@@ -145,18 +148,15 @@ public partial class AdminPlus
             return;
         }
 
-        string question = Localizer["VoteMap.Question"];
-        List<string> maps = new();
+        string mapName = info.GetArg(1);
+        if (MapAliases.TryGetValue(mapName, out var aliasMap))
+            mapName = aliasMap;
 
-        for (int i = 1; i < info.ArgCount; i++)
-        {
-            string mapName = info.GetArg(i);
-            if (MapAliases.TryGetValue(mapName, out var aliasMap))
-                mapName = aliasMap;
-            maps.Add(mapName);
-        }
+        _voteMapName = mapName;
+        string question = Localizer["VoteMap.Question", mapName];
+        List<string> options = new() { Localizer["Vote.Yes"], Localizer["Vote.No"] };
 
-        StartVote(question, maps, caller, VoteType.Map);
+        StartVote(question, options, caller, VoteType.Map);
     }
 
     private void CmdRevote(CCSPlayerController? caller, CommandInfo info)
@@ -193,6 +193,14 @@ public partial class AdminPlus
             _playerVotes.Remove(caller);
             caller.Print(Localizer["Vote.Revoted"]);
         }
+
+        _playersWhoClosedMenu.Remove(caller);
+
+        _playersWhoClosedMenu.Remove(caller);
+
+        _playersWhoClosedMenu.Remove(caller);
+
+        _playersWhoClosedMenu.Remove(caller);
     }
 
     private void CmdCancelVote(CCSPlayerController? caller, CommandInfo info)
@@ -248,6 +256,7 @@ public partial class AdminPlus
 
         _voteTimer = AddTimer(_voteTimeLimit, () => EndVote());
         
+        Console.WriteLine($"[AdminPlus] Starting vote countdown: {_remainingTime} seconds");
         _countdownTimer = AddTimer(1.0f, () => UpdateCountdown(), TimerFlags.REPEAT);
     }
 
@@ -278,6 +287,8 @@ public partial class AdminPlus
         {
             _countdownTimer?.Kill();
             _countdownTimer = null;
+            _isVoteInProgress = false;
+            EndVote();
         }
     }
 
@@ -288,6 +299,7 @@ public partial class AdminPlus
         string titleWithCountdown = Localizer["Vote.MenuTitleWithTime", _currentVoteQuestion, _remainingTime];
         
         var newMenu = CreateMenu(titleWithCountdown);
+        if (newMenu == null) return;
         
         foreach (var option in _voteResults.Keys)
         {
@@ -317,6 +329,7 @@ public partial class AdminPlus
         string titleWithCountdown = Localizer["Vote.MenuTitleWithTime", _currentVoteQuestion, _remainingTime];
         
         var newMenu = CreateMenu(titleWithCountdown);
+        if (newMenu == null) return;
         
         foreach (var option in _voteResults.Keys)
         {
@@ -346,6 +359,7 @@ public partial class AdminPlus
         string titleWithCountdown = Localizer["Vote.MenuTitleWithTime", _currentVoteQuestion, _remainingTime];
         
         var newMenu = CreateMenu(titleWithCountdown);
+        if (newMenu == null) return;
         
         foreach (var option in _voteResults.Keys)
         {
@@ -355,7 +369,7 @@ public partial class AdminPlus
         
         newMenu.ExitButton = true;
         
-        var nonVoters = Utilities.GetPlayers().Where(p => p != null && p.IsValid && !p.IsBot && !_playerVotes.ContainsKey(p));
+        var nonVoters = Utilities.GetPlayers().Where(p => p != null && p.IsValid && !p.IsBot && !_playerVotes.ContainsKey(p) && !_playersWhoClosedMenu.Contains(p));
         foreach (var player in nonVoters)
         {
             if (player.IsValid)
@@ -372,6 +386,7 @@ public partial class AdminPlus
     {
         string titleWithCountdown = Localizer["Vote.MenuTitleWithTime", question, _remainingTime];
         _currentVoteMenu = CreateMenu(titleWithCountdown);
+        if (_currentVoteMenu == null) return;
 
         foreach (string option in options)
         {
@@ -484,9 +499,20 @@ public partial class AdminPlus
 
     private void ShowModernVoteResults(KeyValuePair<string, int> winner, int totalVotes)
     {
-        string baseMessage = Localizer["Vote.WinnerOnly"];
-        string winnerMessage = baseMessage.Replace("{0}", winner.Key);
-        PlayerExtensions.PrintToAll(winnerMessage);
+        var maxVotes = _voteResults.Values.Max();
+        var winners = _voteResults.Where(x => x.Value == maxVotes).ToList();
+        
+        if (winners.Count > 1)
+        {
+            string voteDetails = string.Join(" - ", winners.Select(w => $"{ChatColors.Blue}{w.Key}{ChatColors.Default} [{ChatColors.Green}{w.Value} VOTES{ChatColors.Default}]"));
+            string tieMessage = string.Format(CultureInfo.InvariantCulture, Localizer["Vote.TieWithVotes"], voteDetails);
+            PlayerExtensions.PrintToAll(tieMessage);
+        }
+        else
+        {
+            string winnerMessage = string.Format(CultureInfo.InvariantCulture, Localizer["Vote.WinnerWithVotes"], winner.Key, winner.Value);
+            PlayerExtensions.PrintToAll(winnerMessage);
+        }
     }
 
     private void ProcessVoteResult(KeyValuePair<string, int> winner)
@@ -529,26 +555,29 @@ public partial class AdminPlus
     private void ProcessMapVoteResult()
     {
         var winner = _voteResults.OrderByDescending(x => x.Value).FirstOrDefault();
-        string mapName = winner.Key;
-
-        if (MapAliases.TryGetValue(mapName, out var aliasMap))
-            mapName = aliasMap;
-
-        if (!string.IsNullOrEmpty(mapName))
+        var maxVotes = _voteResults.Values.Max();
+        var winners = _voteResults.Where(x => x.Value == maxVotes).ToList();
+        
+        
+        if (winners.Count == 1 && winner.Key == Localizer["Vote.Yes"])
         {
-            PlayerExtensions.PrintToAll(Localizer["VoteMap.Changed", mapName]);
-            
-            AddTimer(4.0f, () =>
+            if (!string.IsNullOrEmpty(_voteMapName))
             {
-                try
+                string mapToChange = _voteMapName;
+                PlayerExtensions.PrintToAll(Localizer["VoteMap.Changed", mapToChange]);
+                
+                AddTimer(4.0f, () =>
                 {
-                    Server.ExecuteCommand($"changelevel {mapName}");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"[AdminPlus] Map change error: {ex.Message}");
-                }
-            });
+                    try
+                    {
+                        Server.ExecuteCommand($"changelevel {mapToChange}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[AdminPlus] Map change error: {ex.Message}");
+                    }
+                });
+            }
         }
     }
 
@@ -635,8 +664,13 @@ public partial class AdminPlus
             _targetPlayer = null;
             _voteReason = "";
             _voteDuration = 0;
+            _voteMapName = "";
             _remainingTime = 30;
             _isVoteInProgress = false;
+            _playersWhoClosedMenu.Clear();
+            _playersWhoClosedMenu.Clear();
+            _playersWhoClosedMenu.Clear();
+            _playersWhoClosedMenu.Clear();
             
             Console.WriteLine("[AdminPlus] Vote system cleaned up.");
         }
@@ -669,8 +703,19 @@ public partial class AdminPlus
         foreach (var player in players)
         {
             if (player.IsValid)
-                CloseMenu(player);
+            {
+                try
+                {
+                    CloseMenu(player);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[AdminPlus] Error closing menu for {player.PlayerName}: {ex.Message}");
+                }
+            }
         }
+        
+        _currentVoteMenu = null;
     }
 
     private void CmdVoteKick(CCSPlayerController? caller, CommandInfo info)
@@ -805,7 +850,7 @@ public partial class AdminPlus
         foreach (var player in players)
         {
             string playerText = $"{player.PlayerName} (#{player.UserId})";
-            playerMenu.AddMenuOption(playerText, (menuCaller, option) => StartPlayerVote(menuCaller, player, voteType, question));
+            playerMenu?.AddMenuOption(playerText, (menuCaller, option) => StartPlayerVote(menuCaller, player, voteType, question));
         }
 
         if (playerMenu != null)

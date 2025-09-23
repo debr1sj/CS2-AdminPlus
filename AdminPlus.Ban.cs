@@ -54,14 +54,19 @@ public partial class AdminPlus
 
     private void CmdBan(CCSPlayerController? caller, CommandInfo info)
     {
-        if (caller == null)
+        bool isConsoleCommand = caller == null;
+        
+        if (isConsoleCommand)
         {
-            Console.WriteLine("[AdminPlus] Panel ban command executed.");
+            Console.WriteLine("[AdminPlus] Console ban command executed.");
         }
-        else if (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/ban"))
+        else
         {
-            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
-            return;
+            if (caller == null || !caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/ban"))
+            {
+                caller?.Print(Localizer["NoPermission"]);
+                return;
+            }
         }
 
         if (info.ArgCount < 2)
@@ -241,14 +246,19 @@ public partial class AdminPlus
 
     private void CmdIpBan(CCSPlayerController? caller, CommandInfo info)
     {
-        if (caller == null)
+        bool isConsoleCommand = caller == null;
+        
+        if (isConsoleCommand)
         {
-            Console.WriteLine("[AdminPlus] Panel IP ban command executed.");
+            Console.WriteLine("[AdminPlus] Console IP ban command executed.");
         }
-        else if (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/ban"))
+        else
         {
-            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
-            return;
+            if (caller == null || !caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/ban"))
+            {
+                caller?.Print(Localizer["NoPermission"]);
+                return;
+            }
         }
 
         if (info.ArgCount < 2)
@@ -307,14 +317,19 @@ public partial class AdminPlus
 
     private void CmdUnban(CCSPlayerController? caller, CommandInfo info)
     {
-        if (caller == null)
+        bool isConsoleCommand = caller == null;
+        
+        if (isConsoleCommand)
         {
-            Console.WriteLine("[AdminPlus] Panel unban command executed.");
+            Console.WriteLine("[AdminPlus] Console unban command executed.");
         }
-        else if (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/unban"))
+        else
         {
-            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
-            return;
+            if (caller == null || !caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/unban"))
+            {
+                caller?.Print(Localizer["NoPermission"]);
+                return;
+            }
         }
 
         if (info.ArgCount < 2)

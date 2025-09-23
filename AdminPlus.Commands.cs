@@ -101,14 +101,19 @@ public partial class AdminPlus
         {
             AddCommand(alias, $"Change map alias: {alias}", (caller, info) =>
             {
-                if (caller == null)
+                bool isConsoleCommand = caller == null;
+                
+                if (isConsoleCommand)
                 {
-                    Console.WriteLine($"[AdminPlus] Panel map change command executed: {alias}");
+                    Console.WriteLine($"[AdminPlus] Console map change command executed: {alias}");
                 }
-                else if (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic"))
+                else
                 {
-                    if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
-                    return;
+                    if (caller == null || !caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic"))
+                    {
+                        caller?.Print(Localizer["NoPermission"]);
+                        return;
+                    }
                 }
                 ForceChangeMap(caller, MapAliases[alias]);
             });
@@ -117,14 +122,19 @@ public partial class AdminPlus
 
     private void CmdKick(CCSPlayerController? caller, CommandInfo info)
     {
-        if (caller == null)
+        bool isConsoleCommand = caller == null;
+        
+        if (isConsoleCommand)
         {
-            Console.WriteLine("[AdminPlus] Panel kick command executed.");
+            Console.WriteLine("[AdminPlus] Console kick command executed.");
         }
-        else if (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic"))
+        else
         {
-            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
-            return;
+            if (caller == null || !caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic"))
+            {
+                caller?.Print(Localizer["NoPermission"]);
+                return;
+            }
         }
 
         if (info.ArgCount < 2)
@@ -142,17 +152,10 @@ public partial class AdminPlus
             return;
         }
 
-        var target = FindPlayerByNameOrId(targetInput);
-
-        if (target == null || !target.IsValid)
+        var target = GetPlayerTarget(caller, info, 1, out string errorMessage);
+        if (target == null)
         {
-            SendErrorMessage(caller, "NoMatchingClient", "No matching player found.");
-            return;
-        }
-
-        if (caller != null && caller.IsValid && CheckImmunity(caller, target))
-        {
-            SendErrorMessage(caller, "Punish.ImmunityBlocked", Localizer["Punish.ImmunityBlocked"]);
+            SendErrorMessage(caller, "NoMatchingClient", errorMessage);
             return;
         }
 
@@ -246,8 +249,20 @@ public partial class AdminPlus
 
     private void CmdSlay(CCSPlayerController? caller, CommandInfo info)
     {
-        if (caller != null && (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/slay")))
-        { if (caller.IsValid) caller.Print(Localizer["NoPermission"]); return; }
+        bool isConsoleCommand = caller == null;
+        
+        if (isConsoleCommand)
+        {
+            Console.WriteLine("[AdminPlus] Console slay command executed.");
+        }
+        else
+        {
+            if (caller == null || !caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/slay"))
+            {
+                caller?.Print(Localizer["NoPermission"]);
+                return;
+            }
+        }
 
         if (info.ArgCount < 2)
         { SendUsageMessage(caller, "Slay.Usage", "Usage: !slay <target>"); return; }
@@ -304,12 +319,20 @@ public partial class AdminPlus
 
     private void CmdMoney(CCSPlayerController? caller, CommandInfo info)
     {
-        if (caller == null)
+        bool isConsoleCommand = caller == null;
+        
+        if (isConsoleCommand)
         {
-            Console.WriteLine("[AdminPlus] Panel money command executed.");
+            Console.WriteLine("[AdminPlus] Console money command executed.");
         }
-        else if (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/slay"))
-        { if (caller.IsValid) caller.Print(Localizer["NoPermission"]); return; }
+        else
+        {
+            if (caller == null || !caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/slay"))
+            {
+                caller?.Print(Localizer["NoPermission"]);
+                return;
+            }
+        }
 
         if (info.ArgCount < 3)
         { SendUsageMessage(caller, "Money.Usage", "Usage: css_money <target> <amount>"); return; }
@@ -369,12 +392,20 @@ public partial class AdminPlus
 
     private void CmdArmor(CCSPlayerController? caller, CommandInfo info)
     {
-        if (caller == null)
+        bool isConsoleCommand = caller == null;
+        
+        if (isConsoleCommand)
         {
-            Console.WriteLine("[AdminPlus] Panel armor command executed.");
+            Console.WriteLine("[AdminPlus] Console armor command executed.");
         }
-        else if (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/slay"))
-        { if (caller.IsValid) caller.Print(Localizer["NoPermission"]); return; }
+        else
+        {
+            if (caller == null || !caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/slay"))
+            {
+                caller?.Print(Localizer["NoPermission"]);
+                return;
+            }
+        }
 
         if (info.ArgCount < 3)
         { SendUsageMessage(caller, "Armor.Usage", "Usage: css_armor <target> <amount>"); return; }
@@ -659,14 +690,19 @@ public partial class AdminPlus
 
     private void CmdChangeMap(CCSPlayerController? caller, CommandInfo info)
     {
-        if (caller == null)
+        bool isConsoleCommand = caller == null;
+        
+        if (isConsoleCommand)
         {
-            Console.WriteLine("[AdminPlus] Panel map change command executed.");
+            Console.WriteLine("[AdminPlus] Console map change command executed.");
         }
-        else if (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic"))
+        else
         {
-            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
-            return;
+            if (caller == null || !caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic"))
+            {
+                caller?.Print(Localizer["NoPermission"]);
+                return;
+            }
         }
 
         if (info.ArgCount < 2)
@@ -800,7 +836,6 @@ public partial class AdminPlus
         else
             Console.WriteLine($"[AdminPlus] {message}");
         
-        // Tüm oyunculara da gönder
         PlayerExtensions.PrintToAll(message);
     }
 
@@ -932,6 +967,39 @@ public partial class AdminPlus
             return matchingPlayers[0];
 
         return matchingPlayers.FirstOrDefault();
+    }
+
+    private CCSPlayerController? GetPlayerTarget(CCSPlayerController? caller, CommandInfo info, int argIndex, out string errorMessage)
+    {
+        errorMessage = string.Empty;
+        
+        if (info.ArgCount <= argIndex)
+        {
+            errorMessage = "No target specified.";
+            return null;
+        }
+
+        string targetInput = info.GetArg(argIndex);
+        if (string.IsNullOrWhiteSpace(targetInput))
+        {
+            errorMessage = "Empty target specified.";
+            return null;
+        }
+
+        var target = FindPlayerByNameOrId(targetInput);
+        if (target == null)
+        {
+            errorMessage = "No matching player found.";
+            return null;
+        }
+
+        if (caller != null && caller.IsValid && CheckImmunity(caller, target))
+        {
+            errorMessage = "Target has immunity.";
+            return null;
+        }
+
+        return target;
     }
 
     private string GetExecutorNameCommand(CCSPlayerController? caller)

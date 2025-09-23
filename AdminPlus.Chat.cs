@@ -66,7 +66,10 @@ public partial class AdminPlus
             {
                 var msg = text.Length >= 2 && text[1] == ' ' ? text[2..] : text[1..];
                 if (!string.IsNullOrWhiteSpace(msg))
-                    SendASay(caller, msg);
+                {
+                    var adminChatMessage = string.Format(CultureInfo.InvariantCulture, Localizer["css_adminchat"], caller.PlayerName ?? caller.SteamID.ToString(), msg);
+                    Server.PrintToChatAll(adminChatMessage);
+                }
                 return HookResult.Handled;
             }
 
@@ -74,7 +77,10 @@ public partial class AdminPlus
             {
                 var msg = text.Length >= 2 && text[1] == ' ' ? text[2..] : text[1..];
                 if (!string.IsNullOrWhiteSpace(msg))
-                    SendSayAll(caller, msg);
+                {
+                    var adminMessage = string.Format(CultureInfo.InvariantCulture, Localizer["css_asay"], caller.PlayerName ?? caller.SteamID.ToString(), msg);
+                    Server.PrintToChatAll(adminMessage);
+                }
                 return HookResult.Handled;
             }
 
@@ -129,9 +135,22 @@ public partial class AdminPlus
     private void SendASay(CCSPlayerController from, string message)
     {
         var line = string.Format(CultureInfo.InvariantCulture, Localizer["css_asay"], from.PlayerName ?? from.SteamID.ToString(), message);
-        from.PrintToChat(line);
-        foreach (var a in Utilities.GetPlayers()!.Where(p => p.IsValid && !p.IsBot && AdminManager.PlayerHasPermissions(p, ChatPerm)))
-            if (a != from) a.PrintToChat(line);
+        
+        Server.NextFrame(() =>
+        {
+            if (from != null && from.IsValid)
+            {
+                from.PrintToChat(line);
+            }
+            
+            foreach (var a in Utilities.GetPlayers()!.Where(p => p.IsValid && !p.IsBot && AdminManager.PlayerHasPermissions(p, ChatPerm)))
+            {
+                if (a != null && a.IsValid && a != from)
+                {
+                    a.PrintToChat(line);
+                }
+            }
+        });
     }
 
     private void SendCSay(CCSPlayerController from, string message)

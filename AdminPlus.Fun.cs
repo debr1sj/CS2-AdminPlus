@@ -1,4 +1,3 @@
-// FILE: AdminPlus.Fun.cs
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -85,7 +84,6 @@ public partial class AdminPlus
 
     public void RegisterFunCommands()
     {
-        // @css/slay
         AddPermCmd("@css/slay", "css_freeze", "<#userid|name|all @ commands> [time]", CmdFreeze);
         AddPermCmd("@css/slay", "css_unfreeze", "<#userid|name|all @ commands>", CmdUnfreeze);
         AddPermCmd("@css/slay", "css_gravity", "<gravity>", CmdGravity);
@@ -106,7 +104,6 @@ public partial class AdminPlus
         AddPermCmd("@css/slay", "css_glow", "<#userid|name|all @ commands> <color>", CmdGlow);
         AddPermCmd("@css/slay", "css_color", "<#userid|name|all @ commands> <color>", CmdColor);
 
-        // @css/cheats
         AddPermCmd("@css/cheats", "css_revive", "<#userid|name|all @ commands>", CmdRespawn);
         AddPermCmd("@css/cheats", "css_respawn", "<#userid|name|all @ commands>", CmdRespawn);
         AddPermCmd("@css/cheats", "css_noclip", "<#userid|name|all @ commands> <0|1>", CmdNoclip);
@@ -118,7 +115,6 @@ public partial class AdminPlus
         AddPermCmd("@css/cheats", "css_unspeed", "<#userid|name|all @ commands>", CmdUnSpeed);
         AddPermCmd("@css/cheats", "css_god", "<#userid|name|all @ commands> <0|1>", CmdGod);
 
-        // @css/kick
         AddPermCmd("@css/kick", "css_team", "<#userid|name|all @ commands> <t|ct|spec>", CmdTeam);
         AddPermCmd("@css/kick", "css_swap", "<#userid|name>", CmdSwap);
     }
@@ -865,23 +861,19 @@ public partial class AdminPlus
         var t = players[0];
         if (_lastDeathPosFun.TryGetValue(t.SteamID, out var v) || t.TryGetLastCoord(out v))
         {
-            // Z koordinatını biraz yükselt (yere gömülmemesi için)
             var adjustedPos = new Vector(v.X, v.Y, v.Z + 10);
             
             SafeRespawn(t);
             
-            // Teleport işlemini daha güvenilir hale getir
             void tp() 
             { 
                 var pawn = t.PlayerPawn?.Value; 
                 if (pawn != null && pawn.IsValid && t.IsValid) 
                 {
-                    // Teleport et
                     pawn.Teleport(adjustedPos, pawn.AbsRotation, new Vector(0, 0, 0));
                 }
             }
             
-            // Daha uzun sürelerle teleport et
             AddTimer(0.2f, tp);
             AddTimer(0.5f, tp);
             AddTimer(1.0f, tp);

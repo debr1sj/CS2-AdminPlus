@@ -205,23 +205,23 @@ The plugin features a powerful easy menu system powered by [MenuManagerCS2](http
 
 ## 🌍 Localization
 
-The plugin currently supports **English** language with customizable messages through translation files.
+The plugin currently supports **English** and **French** languages with customizable messages through translation files.
 
 ### 🚀 Multi-language Support Coming Soon!
 
 We're working on adding support for multiple languages including:
-- 🇹🇷 Turkish
-- 🇩🇪 German  
-- 🇪🇸 Spanish
-- 🇫🇷 French
-- 🇷🇺 Russian
-- 🇦🇷 Arabic
-- 🇮🇷 Farsi
-- 🇱🇻 Latvian
-- 🇵🇱 Polish
-- 🇧🇷 Brazilian Portuguese
-- 🇵🇹 Portuguese
-- 🇨🇳 Chinese (Simplified)
+- 🇫🇷 French (Français) ✅ - ( Thanks to felyjyn )
+- 🇹🇷 Turkish (Türkçe)
+- 🇩🇪 German (Deutsch)
+- 🇪🇸 Spanish (Español)
+- 🇷🇺 Russian (Русский)
+- 🇦🇷 Arabic (العربية)
+- 🇮🇷 Farsi (فارسی)
+- 🇱🇻 Latvian (Latviešu)
+- 🇵🇱 Polish (Polski)
+- 🇧🇷 Brazilian Portuguese (Português Brasileiro)
+- 🇵🇹 Portuguese (Português)
+- 🇨🇳 Chinese (Simplified) (中文简体)
 
 ### 🤝 Contribute Translations
 
@@ -278,7 +278,19 @@ Quick map access with aliases:
 
 ## 📋 Changelog
 
-### 🎉 Version 1.0.1 (Latest)
+### 🎉 Version 1.0.2 (Latest)
+- 🔒 **Security Enhancements**: Permission bypass protection with 14 different security checks (Thanks to justburak for feedback)
+- ✅ **Input Validation**: All inputs are properly validated
+- 🛡️ **Immunity System**: Admin level protection system
+- 🖥️ **Console Menu Fix**: Fixed console command `css_admin` not opening admin menu (Thanks to flsflameboy1 for help)
+- 🇫🇷 **French Translation**: Added complete French language support (Thanks to felyjyn for translation)
+- 💬 **Chat System Improvements**: Admin @ messages properly colored
+- 📊 **Detailed Vote Results**: Vote counts with winner/tie display
+- 🗳️ **Single Map Voting**: Support for single map votes with Yes/No options
+- 🎮 **Menu Persistence**: Fixed vote menu reopening issues
+- 🗺️ **Map Change Fix**: Fixed map not changing after successful votes
+
+### 🎉 Version 1.0.1
 - ✨ **MenuManager Integration**: Added advanced easy menu system with MenuManager dependency
 - 🏷️ **Prefix System**: Centralized prefix management from language files
 - 🐛 **Fixed hrespawn**: Players now respawn at their last death position instead of team spawn
@@ -287,8 +299,9 @@ Quick map access with aliases:
 
 ## 🗺️ Roadmap
 
-### 🚀 Upcoming Features (v1.0.2)
+### 🚀 Upcoming Features (v1.0.3)
 - 🌍 **Multi-language Support**: Complete translation system with 12+ languages
+- 🔗 **Discord Integration**: Real-time notifications and logging to Discord channels
 
 
 ## 🆘 Support
@@ -297,7 +310,7 @@ Quick map access with aliases:
 If you encounter any issues or bugs:
 1. Check the [GitHub Issues](https://github.com/debr1sj/CS2-AdminPlus/issues) first
 2. Create a new issue with:
-   - **Plugin version**: AdminPlus v1.0.1
+   - **Plugin version**: AdminPlus v1.0.2
    - **CounterStrikeSharp version**: Your CSS version
    - **Error logs**: Any console errors
    - **Steps to reproduce**: How to trigger the bug

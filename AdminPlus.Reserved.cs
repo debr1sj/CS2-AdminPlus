@@ -50,8 +50,9 @@ public partial class AdminPlus
             
             RegisterListener<OnMapStart>(OnMapStartReservation);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            LogError("PeriodicCleanup error", ex);
         }
     }
     
@@ -61,8 +62,9 @@ public partial class AdminPlus
         {
             UpdateReservationSettings();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            LogError("PeriodicCleanup error", ex);
         }
     }
     
@@ -323,8 +325,9 @@ public partial class AdminPlus
                 player.Disconnect(NetworkDisconnectionReason.NETWORK_DISCONNECT_REJECT_RESERVED_FOR_LOBBY);
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            LogError("PeriodicCleanup error", ex);
         }
     }
     
@@ -333,8 +336,9 @@ public partial class AdminPlus
         try
         {
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            LogError("PeriodicCleanup error", ex);
         }
     }
     
@@ -344,8 +348,9 @@ public partial class AdminPlus
         {
             UpdateVisibleSlots();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            LogError("PeriodicCleanup error", ex);
         }
     }
     
@@ -391,8 +396,9 @@ public partial class AdminPlus
                 _svVisibleMaxPlayers.SetValue(-1);
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            LogError("PeriodicCleanup error", ex);
         }
     }
     
@@ -423,8 +429,9 @@ public partial class AdminPlus
                 }
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            LogError("PeriodicCleanup error", ex);
         }
     }
     

@@ -362,10 +362,11 @@
   "Say.UsageConsole": "Usage: css_say <message>",
 
   "css_say": "{yellow}{0}{default}: {1}",
-  "css_asay": "{red}[ADMIN]{default} {red}{0}{default}: {1}",
+  "css_asay": "{red}[ADMIN]{default} {red}{0}{default}: {red}{1}{default}",
   "css_csay": "{yellow}[ANNOUNCEMENT]{default} {red}{0}{default}: {1}",
   "css_hsay": "{red}[WARNING]{default} {red}{0}{default}: {1}",
   "css_psay": "{green}[PRIVATE]{default} {red}{0}{default} → {red}{1}{default}: {2}",
+  "css_adminchat": "{red}[ADMIN CHAT]{default} {red}{0}{default}: {red}{1}{default}",
 
   "Admins.Usage": "Usage: !admins",
   "Admins.None": "{red} No admins are currently online!",
@@ -377,6 +378,7 @@
   "Admin.List.Header": "Admin List",
   "Admin.List.Empty": "Admin list is empty.",
   "Admin.List.Row": "• {red}{0}{default} (Immunity: {yellow}{1}{default}, Groups: {blue}{2}{default})",
+  "Admin.List.RowSimple": "• {red}{0}{default} (Immunity: {yellow}{1}{default})",
   "Admin.List.Printed": "Admin list printed to console.",
   "Admin.Added": "{green}{0}{default} {blue}({1}){default} added as admin! Group: {yellow}{2}{default}, Immunity: {yellow}{3}{default}",
   "Admin.Exists": "{red}{0}{default} is already an admin!",
@@ -460,6 +462,9 @@
   "Vote.AlreadyEnded": "Vote time has expired.",
   "Vote.MenuReopened": "Vote menu reopened.",
   "Vote.WinnerOnly": "Vote Winner: {blue}{0}{default}",
+  "Vote.WinnerWithVotes": "Vote Winner: {blue}{0}{default} [{green}{1} VOTES{default}]",
+  "Vote.Tie": "Vote Result: {red}Tie{default}",
+  "Vote.TieWithVotes": "Vote Result: {red}Tie{default} - {0}",
 
   "Vote.Yes": "Yes",
   "Vote.No": "No",
@@ -468,7 +473,7 @@
 
   "Vote.PlayerVoteQuestion": "Vote to {0} {red}{1}{default}!",
 
-  "VoteMap.Question": "Which map should we change to?",
+  "VoteMap.Question": "Should we change to {0}?",
   "VoteMap.Changed": "Changing map to {yellow}{0}{default}...",
   "Map.Changed": "{red}{0}{default} is changing map to {yellow}{1}{default}...",
   "Map.WorkshopChanged": "{red}{0}{default} is changing workshop map to {yellow}{1}{default}...",

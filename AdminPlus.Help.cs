@@ -1,4 +1,3 @@
-// FILE: AdminPlus.Help.cs
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
