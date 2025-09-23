@@ -2,9 +2,9 @@
 
 [![CounterStrikeSharp](https://img.shields.io/badge/CounterStrikeSharp-API-blue.svg)](https://github.com/roflmuffin/CounterStrikeSharp)
 
-> ⚠️ **Important Notice**: If you are using other admin plugins or AdminList plugins, conflicts may occur and cause errors. I am continuously updating the plugin and waiting for your bug reports. The first version will definitely have bugs, but they will be resolved over time.
+> ⚠️ **Important Notice**: If you are using other admin plugins or AdminList plugins, conflicts may occur and cause errors. I am continuously updating the plugin and waiting for your bug reports.
 
-Advanced CounterStrikeSharp admin plugin with comprehensive features: ban/kick system, interactive HTML menus, voting system, fun commands, communication control, and reservation system. No database required - file-based storage, easy setup.
+Advanced CounterStrikeSharp admin plugin with comprehensive features: ban/kick system, easy menu system, voting system, fun commands, communication control, and reservation system. No database required - file-based storage, easy setup.
 
 ## ✨ Features
 
@@ -12,7 +12,7 @@ Advanced CounterStrikeSharp admin plugin with comprehensive features: ban/kick s
 - 👥 **Admin Management**: Add/remove admins with immunity levels
 - 💬 **Communication Control**: Mute, gag, and silence players
 - 🗳️ **Voting System**: Map votes, kick votes, ban votes, and custom votes
-- 🎮 **Interactive Menus**: HTML-based admin menus for easy management
+- 🎮 **Interactive Menus**: Easy menu system for management
 - 🎯 **Fun Commands**: Teleport, freeze, blind, drug effects, and more
 - 📢 **Chat Commands**: Admin say, center say, HUD messages
 - 🔒 **Reservation System**: Admin priority slots and player management
@@ -184,7 +184,7 @@ css_adminhelp                                # Show detailed command help [@css/
 
 ## 🎮 Advanced Menu System
 
-The plugin features a powerful interactive HTML menu system powered by [MenuManagerCS2](https://github.com/NickFox007/MenuManagerCS2), accessible via `css_admin`:
+The plugin features a powerful easy menu system powered by [MenuManagerCS2](https://github.com/NickFox007/MenuManagerCS2), accessible via `css_admin`:
 
 ### 📋 Menu Categories
 - **👥 Admin Management**: Add/remove admins with immunity levels and group management
@@ -279,7 +279,7 @@ Quick map access with aliases:
 ## 📋 Changelog
 
 ### 🎉 Version 1.0.1 (Latest)
-- ✨ **MenuManager Integration**: Added advanced HTML menu system with MenuManager dependency
+- ✨ **MenuManager Integration**: Added advanced easy menu system with MenuManager dependency
 - 🏷️ **Prefix System**: Centralized prefix management from language files
 - 🐛 **Fixed hrespawn**: Players now respawn at their last death position instead of team spawn
 - 🧹 **Code Cleanup**: Removed unused reservation status command
@@ -287,16 +287,9 @@ Quick map access with aliases:
 
 ## 🗺️ Roadmap
 
-### 🚀 Upcoming Features (v1.1.0)
+### 🚀 Upcoming Features (v1.0.2)
 - 🌍 **Multi-language Support**: Complete translation system with 12+ languages
-- 🎮 **Enhanced Menu System**: More interactive features and improved UI
-- 📊 **Advanced Statistics**: Player statistics and admin activity tracking
-- 🔧 **Configuration System**: Web-based configuration panel
 
-### 🎯 Future Versions
-- **v1.2.0**: Advanced reporting and analytics
-- **v1.3.0**: Plugin API for third-party integrations
-- **v2.0.0**: Complete rewrite with modern architecture
 
 ## 🆘 Support
 
