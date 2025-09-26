@@ -11,6 +11,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace AdminPlus;
 
@@ -85,7 +86,7 @@ public partial class AdminPlus
             return;
         }
 
-        var target = (caller == null) ? GetPlayerFromInput(targetInput, true) : GetPlayerFromInput(targetInput);
+        var target = GetPlayerFromInput(targetInput, true); 
 
         if (target == null && caller != null && caller.IsValid)
         {
@@ -169,6 +170,17 @@ public partial class AdminPlus
             PlayerExtensions.PrintToAll(Localizer["Team.Ban.PlayerCount", bannedCount]);
 
             LogAction($"{executorName} banned {bannedCount} players from {teamName} for {minutes} minutes. Reason: {reason}");
+            
+            string banDurationText = minutes == 0 ? Localizer["Discord.BanLog.Permanent"].Value : $"{minutes} dakika";
+            foreach (var target in teamPlayers)
+            {
+                if (target != null && target.IsValid)
+                {
+                    AddTimer(0.1f, () => {
+                        _ = Discord.SendBanLog(target.PlayerName, target.SteamID.ToString(), target.IpAddress ?? "-", executorName, reason, banDurationText, false, this);
+                    });
+                }
+            }
         }
         else
         {
@@ -242,6 +254,11 @@ public partial class AdminPlus
             PlayerExtensions.PrintToAll(Localizer["Player.Ban.Success", executorName, safeName, Localizer["Duration.Temporary", minutes], reason]);
 
         LogAction($"{executorName} banned {safeName} ({steamId}) [IP:{ip}] for {minutes} minutes. Reason: {reason}");
+        
+        string durationText = minutes == 0 ? Localizer["Discord.BanLog.Permanent"].Value : $"{minutes} dakika";
+        AddTimer(0.1f, () => {
+            _ = Discord.SendBanLog(safeName, steamId, ip, executorName, reason, durationText, false, this);
+        });
     }
 
     private void CmdIpBan(CCSPlayerController? caller, CommandInfo info)
@@ -269,15 +286,38 @@ public partial class AdminPlus
         }
 
         string input = info.GetArg(1);
-        var target = GetPlayerFromInput(input, caller == null);
+        var target = GetPlayerFromInput(input, true);
 
         string ip = input;
         string displayName = ip;
+
+        Console.WriteLine($"[AdminPlus] IP Ban Debug - Input: {input}");
+        Console.WriteLine($"[AdminPlus] IP Ban Debug - Target found: {target != null}");
+        if (target != null)
+        {
+            Console.WriteLine($"[AdminPlus] IP Ban Debug - Player name: {target.PlayerName}");
+            Console.WriteLine($"[AdminPlus] IP Ban Debug - IP address: {target.IpAddress}");
+        }
 
         if (target != null && !string.IsNullOrEmpty(target.IpAddress))
         {
             ip = target.IpAddress;
             displayName = SanitizeName(target.PlayerName);
+            Console.WriteLine($"[AdminPlus] IP Ban Debug - Using player IP: {ip}");
+            
+            if (ip.Contains(":"))
+            {
+                ip = ip.Split(':')[0];
+                Console.WriteLine($"[AdminPlus] IP Ban Debug - Extracted IP without port: {ip}");
+            }
+        }
+        else if (target == null && !Regex.IsMatch(input, @"^\d{1,3}(\.\d{1,3}){3}$"))
+        {
+            if (caller != null && caller.IsValid) 
+                caller.Print(Localizer["IpBan.PlayerNotFound", input]);
+            else 
+                Console.WriteLine(Localizer["IpBan.PlayerNotFoundConsole", input]);
+            return;
         }
 
         if (string.IsNullOrWhiteSpace(ip) || !Regex.IsMatch(ip, @"^\d{1,3}(\.\d{1,3}){3}$"))
@@ -294,7 +334,8 @@ public partial class AdminPlus
         }
 
         var safeReason = SanitizeForCfg(reason);
-        var line = $"addip \"{ip}\" expiry:0 // {safeReason}";
+        var safeDisplayName = SanitizeForCfg(displayName);
+        var line = $"addip \"{ip}\" expiry:0 // {safeReason} (Player: {safeDisplayName})";
 
         lock (_lock)
         {
@@ -302,7 +343,7 @@ public partial class AdminPlus
             File.WriteAllLines(BannedIpPath, IpBans.Values.Select(x => x.line));
         }
 
-        foreach (var p in Utilities.GetPlayers()!.Where(p => p.IsValid && p.IpAddress == ip))
+        foreach (var p in Utilities.GetPlayers()!.Where(p => p.IsValid && !string.IsNullOrEmpty(p.IpAddress) && p.IpAddress.StartsWith(ip + ":")))
             p.Disconnect(NetworkDisconnectionReason.NETWORK_DISCONNECT_STEAM_BANNED);
 
         string executorName = GetExecutorName(caller);
@@ -313,6 +354,10 @@ public partial class AdminPlus
             PlayerExtensions.PrintToAll(Localizer["IpBan.AddedIp", executorName, ip, reason]);
 
         LogAction($"{executorName} IP banned {displayName} ({ip}). Reason: {reason}");
+        
+        AddTimer(0.1f, () => {
+            _ = Discord.SendBanLog(displayName, "IP Ban", ip, executorName, reason, Localizer["Discord.BanLog.Permanent"].Value, false, this);
+        });
     }
 
     private void CmdUnban(CCSPlayerController? caller, CommandInfo info)
@@ -341,9 +386,53 @@ public partial class AdminPlus
 
         string key = info.GetArg(1);
         bool removed = false;
+        
+        if (!key.Contains("STEAM_") && !key.Contains("."))
+        {
+            var target = GetPlayerFromInput(key, true); // Her zaman console modu gibi davran
+            if (target != null && target.IsValid)
+            {
+                key = target.SteamID.ToString();
+            }
+            else
+            {
+                string foundSteamId = FindSteamIdByName(key);
+                if (!string.IsNullOrEmpty(foundSteamId))
+                {
+                    key = foundSteamId;
+                }
+                else
+                {
+                    if (caller != null && caller.IsValid) 
+                        caller.Print(Localizer["Unban.PlayerNotFound", key]);
+                    else 
+                        Console.WriteLine(Localizer["Unban.PlayerNotFoundConsole", key]);
+                    return;
+                }
+            }
+        }
+        
+        string playerName = "Unknown";
+        string ip = "-";
+        string reason = "Unbanned";
 
         lock (_lock)
         {
+            if (SteamBans.ContainsKey(key))
+            {
+                var banInfo = SteamBans[key];
+                playerName = banInfo.nick; 
+                ip = banInfo.ip;
+                reason = Localizer["Discord.BanLog.UnbanReason"].Value;
+            }
+            else if (IpBans.ContainsKey(key))
+            {
+                var banInfo = IpBans[key];
+                playerName = banInfo.nick; 
+                ip = key; 
+                reason = Localizer["Discord.BanLog.UnbanIpReason"].Value;
+            }
+            
             if (SteamBans.Remove(key))
             {
                 File.WriteAllLines(BannedUserPath, SteamBans.Values.Select(x => x.line));
@@ -362,6 +451,10 @@ public partial class AdminPlus
         {
             PlayerExtensions.PrintToAll(Localizer["Unban.Success", executorName, key]);
             LogAction($"{executorName} unbanned {key}");
+            
+            AddTimer(0.1f, () => {
+                _ = Discord.SendBanLog(playerName, key, ip, executorName, reason, "N/A", true, this);
+            });
         }
         else
         {
@@ -576,8 +669,12 @@ public partial class AdminPlus
         try
         {
             var path = Path.Combine(Server.GameDirectory, "csgo/addons/counterstrikesharp/configs/admins.json");
-            if (!File.Exists(path)) return;
-
+            if (!File.Exists(path)) 
+            {
+                Console.WriteLine($"[AdminPlus] ERROR: Admin file not found for ban sync: {path}");
+                return;
+            }
+            Console.WriteLine($"[AdminPlus] Syncing bans with admin data from: {path}");
             var json = JsonDocument.Parse(File.ReadAllText(path));
             foreach (var admin in json.RootElement.EnumerateObject())
             {
@@ -779,6 +876,8 @@ public partial class AdminPlus
             SteamBans.Clear();
             IpBans.Clear();
             
+            Console.WriteLine($"[AdminPlus] Clearing SteamID ban file: {BannedUserPath}");
+            Console.WriteLine($"[AdminPlus] Clearing IP ban file: {BannedIpPath}");
             File.WriteAllText(BannedUserPath, "");
             File.WriteAllText(BannedIpPath, "");
         }
@@ -805,6 +904,7 @@ public partial class AdminPlus
         {
             ipBanCount = IpBans.Count;
             IpBans.Clear();
+            Console.WriteLine($"[AdminPlus] Clearing IP ban file: {BannedIpPath}");
             File.WriteAllText(BannedIpPath, "");
         }
 
@@ -814,6 +914,54 @@ public partial class AdminPlus
             Console.WriteLine(Localizer["CleanIpBans.Console", ipBanCount]);
             
         LogAction($"All IP bans cleared by {GetExecutorName(caller)}. Count: {ipBanCount}");
+    }
+
+    private string FindSteamIdByName(string playerName)
+    {
+        try
+        {
+            if (File.Exists(BannedUserPath))
+            {
+                foreach (var line in File.ReadAllLines(BannedUserPath))
+                {
+                    var match = System.Text.RegularExpressions.Regex.Match(line, @"banid\s+""([^""]+)""\s+""([^""]+)""");
+                    if (match.Success)
+                    {
+                        string steamId = match.Groups[1].Value;
+                        string fullPlayerName = match.Groups[2].Value;
+                        
+                        if (fullPlayerName.Contains(playerName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return steamId;
+                        }
+                    }
+                }
+            }
+            
+            if (File.Exists(BannedIpPath))
+            {
+                foreach (var line in File.ReadAllLines(BannedIpPath))
+                {
+                    var match = System.Text.RegularExpressions.Regex.Match(line, @"addip\s+""([^""]+)""\s+expiry:\d+\s+//\s+[^(]*\(Player:\s+([^)]+)\)");
+                    if (match.Success)
+                    {
+                        string ip = match.Groups[1].Value;
+                        string fullPlayerName = match.Groups[2].Value;
+                        
+                        if (fullPlayerName.Contains(playerName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return ip; 
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[AdminPlus] Error finding Steam ID by name: {ex.Message}");
+        }
+        
+        return "";
     }
 
     private void CmdCleanSteamBans(CCSPlayerController? caller, CommandInfo info)
@@ -830,6 +978,7 @@ public partial class AdminPlus
         {
             steamBanCount = SteamBans.Count;
             SteamBans.Clear();
+            Console.WriteLine($"[AdminPlus] Clearing SteamID ban file: {BannedUserPath}");
             File.WriteAllText(BannedUserPath, "");
         }
 

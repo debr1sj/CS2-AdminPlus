@@ -76,7 +76,6 @@ public partial class AdminPlus
         AddCommand("rr", Localizer["Round.Usage"], CmdRestartRound);
 
         AddCommand("css_kick", "Kick a player from console", CmdKick);
-        AddCommand("css_map", "Change map from console", CmdChangeMap);
         AddCommand("css_wsmap", "Change workshop map from console", CmdChangeWorkshopMap);
         AddCommand("css_workshop", "Change workshop map from console", CmdChangeWorkshopMap);
         AddCommand("css_rcon", "Send RCON command from console", CmdRcon);
@@ -101,20 +100,18 @@ public partial class AdminPlus
         {
             AddCommand(alias, $"Change map alias: {alias}", (caller, info) =>
             {
-                bool isConsoleCommand = caller == null;
+                if (caller == null)
+                {
+                    Console.WriteLine($"[AdminPlus] Map alias '{alias}' can only be used by players, not from console.");
+                    return;
+                }
                 
-                if (isConsoleCommand)
+                if (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic"))
                 {
-                    Console.WriteLine($"[AdminPlus] Console map change command executed: {alias}");
+                    caller.Print(Localizer["NoPermission"]);
+                    return;
                 }
-                else
-                {
-                    if (caller == null || !caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic"))
-                    {
-                        caller?.Print(Localizer["NoPermission"]);
-                        return;
-                    }
-                }
+                
                 ForceChangeMap(caller, MapAliases[alias]);
             });
         }
@@ -174,6 +171,10 @@ public partial class AdminPlus
 
         if (caller == null)
             Console.WriteLine($"[AdminPlus] Panel player kicked: {targetName} (Reason: {reason})");
+
+        AddTimer(0.1f, () => {
+            _ = Discord.SendAdminActionLog("kick", targetName, target.SteamID, executorName, caller?.SteamID ?? 0, reason, this);
+        });
     }
 
     private void CmdSlap(CCSPlayerController? caller, CommandInfo info)
@@ -236,14 +237,68 @@ public partial class AdminPlus
         }
 
         string adminName = GetExecutorNameCommand(caller);
-        string label = targets.Count == 1 ? targets[0].PlayerName : Localizer["Team.ALL"];
-        string message = targets.Count == 1 
-            ? Localizer["css_slap<player>", adminName, EscapeForStringFormat(label), damage]
-            : Localizer["css_slap<multiple>", adminName, targets.Count, damage];
+        string label;
+        string message;
+        
+        if (targetTok.StartsWith("@"))
+        {
+            switch (targetTok.ToLowerInvariant())
+            {
+                case "@all":
+                case "all":
+                case "@*":
+                    label = Localizer["Team.ALL"];
+                    break;
+                case "@t":
+                case "t":
+                case "@ts":
+                case "ts":
+                case "@terrorist":
+                case "terrorist":
+                    label = Localizer["Team.T"];
+                    break;
+                case "@ct":
+                case "ct":
+                case "@cts":
+                case "cts":
+                case "@counter":
+                case "counter":
+                case "@counterterrorist":
+                case "counterterrorist":
+                    label = Localizer["Team.CT"];
+                    break;
+                case "@spec":
+                case "spec":
+                case "@spectator":
+                case "spectator":
+                    label = Localizer["Team.SPEC"];
+                    break;
+                default:
+                    label = Localizer["Team.ALL"];
+                    break;
+            }
+            message = Localizer["css_slap<player>", adminName, label, damage];
+        }
+        else
+        {
+            label = targets.Count == 1 ? targets[0].PlayerName : Localizer["Team.ALL"];
+            message = targets.Count == 1 
+                ? Localizer["css_slap<player>", adminName, EscapeForStringFormat(label), damage]
+                : Localizer["css_slap<multiple>", adminName, targets.Count, damage];
+        }
         
         foreach (var player in Utilities.GetPlayers().Where(p => p.IsValid && !p.IsBot))
         {
             player.Print(message);
+        }
+        
+        AdminPlus.LogAction($"{adminName} slapped {label} for {damage} damage");
+
+        foreach (var target in targets)
+        {
+            AddTimer(0.1f, () => {
+                _ = Discord.SendAdminActionLog("slap", target.PlayerName, target.SteamID, adminName, caller?.SteamID ?? 0, $"Damage: {damage}", this);
+            });
         }
     }
 
@@ -290,11 +345,66 @@ public partial class AdminPlus
         }
 
         string adminName = GetExecutorNameCommand(caller);
-        string message = targets.Count == 1 
-            ? Localizer["css_slay<player>", adminName, EscapeForStringFormat(targets[0].PlayerName)]
-            : Localizer["css_slay<multiple>", adminName, targets.Count];
+        string label;
+        string message;
+        
+        if (targetTok.StartsWith("@"))
+        {
+            switch (targetTok.ToLowerInvariant())
+            {
+                case "@all":
+                case "all":
+                case "@*":
+                    label = Localizer["Team.ALL"];
+                    break;
+                case "@t":
+                case "t":
+                case "@ts":
+                case "ts":
+                case "@terrorist":
+                case "terrorist":
+                    label = Localizer["Team.T"];
+                    break;
+                case "@ct":
+                case "ct":
+                case "@cts":
+                case "cts":
+                case "@counter":
+                case "counter":
+                case "@counterterrorist":
+                case "counterterrorist":
+                    label = Localizer["Team.CT"];
+                    break;
+                case "@spec":
+                case "spec":
+                case "@spectator":
+                case "spectator":
+                    label = Localizer["Team.SPEC"];
+                    break;
+                default:
+                    label = Localizer["Team.ALL"];
+                    break;
+            }
+            message = Localizer["css_slay<player>", adminName, label];
+        }
+        else
+        {
+            label = targets.Count == 1 ? targets[0].PlayerName : Localizer["Team.ALL"];
+            message = targets.Count == 1 
+                ? Localizer["css_slay<player>", adminName, EscapeForStringFormat(label)]
+                : Localizer["css_slay<multiple>", adminName, targets.Count];
+        }
         
         PlayerExtensions.PrintToAll(message);
+        
+        AdminPlus.LogAction($"{adminName} slayed {label}");
+
+        foreach (var target in targets)
+        {
+            AddTimer(0.1f, () => {
+                _ = Discord.SendAdminActionLog("slay", target.PlayerName, target.SteamID, adminName, caller?.SteamID ?? 0, "", this);
+            });
+        }
     }
 
     private void CmdRename(CCSPlayerController? caller, CommandInfo info)
@@ -314,7 +424,15 @@ public partial class AdminPlus
 
         var t = targets[0];
         SafeRename(t, newName);
-        PlayerExtensions.PrintToAll(Localizer["css_rename", GetExecutorNameCommand(caller), EscapeForStringFormat(t.PlayerName), EscapeForStringFormat(SanitizeName(newName))]);
+        
+        string executorName = GetExecutorNameCommand(caller);
+        string targetName = t.PlayerName;
+        
+        PlayerExtensions.PrintToAll(Localizer["Player.Rename.Success", executorName, EscapeForStringFormat(targetName), EscapeForStringFormat(SanitizeName(newName))]);
+
+        AddTimer(0.1f, () => {
+            _ = Discord.SendAdminActionLog("rename", targetName, t.SteamID, executorName, caller?.SteamID ?? 0, $"New name: {newName}", this);
+        });
     }
 
     private void CmdMoney(CCSPlayerController? caller, CommandInfo info)
@@ -383,11 +501,66 @@ public partial class AdminPlus
         }
 
         string adminName = GetExecutorNameCommand(caller);
-        string message = targets.Count == 1 
-            ? Localizer["css_money<player>", adminName, EscapeForStringFormat(targets[0].PlayerName), moneyAmount]
-            : Localizer["css_money<multiple>", adminName, targets.Count, moneyAmount];
+        string label;
+        string message;
+        
+        if (targetTok.StartsWith("@"))
+        {
+            switch (targetTok.ToLowerInvariant())
+            {
+                case "@all":
+                case "all":
+                case "@*":
+                    label = Localizer["Team.ALL"];
+                    break;
+                case "@t":
+                case "t":
+                case "@ts":
+                case "ts":
+                case "@terrorist":
+                case "terrorist":
+                    label = Localizer["Team.T"];
+                    break;
+                case "@ct":
+                case "ct":
+                case "@cts":
+                case "cts":
+                case "@counter":
+                case "counter":
+                case "@counterterrorist":
+                case "counterterrorist":
+                    label = Localizer["Team.CT"];
+                    break;
+                case "@spec":
+                case "spec":
+                case "@spectator":
+                case "spectator":
+                    label = Localizer["Team.SPEC"];
+                    break;
+                default:
+                    label = Localizer["Team.ALL"];
+                    break;
+            }
+            message = Localizer["css_money<player>", adminName, label, moneyAmount];
+        }
+        else
+        {
+            label = targets.Count == 1 ? targets[0].PlayerName : Localizer["Team.ALL"];
+            message = targets.Count == 1 
+                ? Localizer["css_money<player>", adminName, EscapeForStringFormat(label), moneyAmount]
+                : Localizer["css_money<multiple>", adminName, targets.Count, moneyAmount];
+        }
         
         PlayerExtensions.PrintToAll(message);
+        
+        AdminPlus.LogAction($"{adminName} set money for {label} to {moneyAmount}");
+
+        foreach (var target in targets)
+        {
+            AddTimer(0.1f, () => {
+                _ = Discord.SendAdminActionLog("money", target.PlayerName, target.SteamID, adminName, caller?.SteamID ?? 0, $"{moneyAmount}", this);
+            });
+        }
     }
 
     private void CmdArmor(CCSPlayerController? caller, CommandInfo info)
@@ -463,11 +636,66 @@ public partial class AdminPlus
         }
 
         string adminName = GetExecutorNameCommand(caller);
-        string message = targets.Count == 1 
-            ? Localizer["css_armor<player>", adminName, EscapeForStringFormat(targets[0].PlayerName), armorAmount]
-            : Localizer["css_armor<multiple>", adminName, targets.Count, armorAmount];
+        string label;
+        string message;
+        
+        if (targetTok.StartsWith("@"))
+        {
+            switch (targetTok.ToLowerInvariant())
+            {
+                case "@all":
+                case "all":
+                case "@*":
+                    label = Localizer["Team.ALL"];
+                    break;
+                case "@t":
+                case "t":
+                case "@ts":
+                case "ts":
+                case "@terrorist":
+                case "terrorist":
+                    label = Localizer["Team.T"];
+                    break;
+                case "@ct":
+                case "ct":
+                case "@cts":
+                case "cts":
+                case "@counter":
+                case "counter":
+                case "@counterterrorist":
+                case "counterterrorist":
+                    label = Localizer["Team.CT"];
+                    break;
+                case "@spec":
+                case "spec":
+                case "@spectator":
+                case "spectator":
+                    label = Localizer["Team.SPEC"];
+                    break;
+                default:
+                    label = Localizer["Team.ALL"];
+                    break;
+            }
+            message = Localizer["css_armor<player>", adminName, label, armorAmount];
+        }
+        else
+        {
+            label = targets.Count == 1 ? targets[0].PlayerName : Localizer["Team.ALL"];
+            message = targets.Count == 1 
+                ? Localizer["css_armor<player>", adminName, EscapeForStringFormat(label), armorAmount]
+                : Localizer["css_armor<multiple>", adminName, targets.Count, armorAmount];
+        }
         
         PlayerExtensions.PrintToAll(message);
+        
+        AdminPlus.LogAction($"{adminName} set armor for {label} to {armorAmount}");
+
+        foreach (var target in targets)
+        {
+            AddTimer(0.1f, () => {
+                _ = Discord.SendAdminActionLog("armor", target.PlayerName, target.SteamID, adminName, caller?.SteamID ?? 0, $"{armorAmount}", this);
+            });
+        }
     }
 
     private static void SafeRename(CCSPlayerController player, string newname)
@@ -524,6 +752,7 @@ public partial class AdminPlus
         var matches = players.Where(p => !string.IsNullOrEmpty(p.PlayerName) && p.PlayerName!.IndexOf(token, StringComparison.OrdinalIgnoreCase) >= 0).ToList();
         return onlyAlive ? matches.Where(p => p.PawnIsAlive).ToList() : matches;
     }
+
 
     private void HandleTeamKick(CCSPlayerController? caller, CommandInfo info, List<CCSPlayerController> teamPlayers, string teamInput)
     {
@@ -694,15 +923,14 @@ public partial class AdminPlus
         
         if (isConsoleCommand)
         {
-            Console.WriteLine("[AdminPlus] Console map change command executed.");
+            Console.WriteLine("[AdminPlus] Map command can only be used by players, not from console.");
+            return;
         }
-        else
+        
+        if (caller == null || !caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic"))
         {
-            if (caller == null || !caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic"))
-            {
-                caller?.Print(Localizer["NoPermission"]);
-                return;
-            }
+            caller?.Print(Localizer["NoPermission"]);
+            return;
         }
 
         if (info.ArgCount < 2)
@@ -925,6 +1153,8 @@ public partial class AdminPlus
 
         var executor = GetExecutorNameCommand(caller);
         var targetMap = mapName;
+
+        AdminPlus.LogAction($"{executor} changed map to {targetMap}");
 
         PlayerExtensions.PrintToAll(Localizer["Map.Changed", executor, targetMap]);
 

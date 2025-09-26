@@ -2,7 +2,7 @@
 
 [![CounterStrikeSharp](https://img.shields.io/badge/CounterStrikeSharp-API-blue.svg)](https://github.com/roflmuffin/CounterStrikeSharp)
 
-> ⚠️ **Important Notice**: If you are using other admin plugins or AdminList plugins, conflicts may occur and cause errors. I am continuously updating the plugin and waiting for your bug reports.
+> ⚠️ **Important Notice**: If you are using other admin plugins or AdminList plugins, conflicts may occur and cause errors. You should not use plugins like !calladmin and !report as they will conflict with AdminPlus. I am continuously updating the plugin and waiting for your bug reports.
 
 Advanced CounterStrikeSharp admin plugin with comprehensive features: ban/kick system, easy menu system, voting system, fun commands, communication control, and reservation system. No database required - file-based storage, easy setup.
 
@@ -16,8 +16,12 @@ Advanced CounterStrikeSharp admin plugin with comprehensive features: ban/kick s
 - 🎯 **Fun Commands**: Teleport, freeze, blind, drug effects, and more
 - 📢 **Chat Commands**: Admin say, center say, HUD messages
 - 🔒 **Reservation System**: Admin priority slots and player management
-- 🌍 **Multi-language**: English support
-- 📝 **Comprehensive Logging**: All actions logged to files
+- 📊 **Report System**: Player-to-player reporting with Discord integration  
+- 🌍 **Multi-language**: English, Turkish, French, Russian, German support
+- 📝 **Advanced Logging**: All actions logged to files and 7 different Discord webhook channels
+- 🔗 **Discord Integration**: Server status, ban logs, admin commands, communication logs, connection tracking, chat logs, and report system
+- 🔔 **Smart Notifications**: Intelligent admin alerts based on action importance and type
+- 🛡️ **Security & Performance**: Memory leak protection, input validation, and optimized performance
 
 ## 📋 Requirements
 
@@ -48,6 +52,7 @@ The plugin uses file-based storage:
 - `csgo/cfg/banned_user.cfg` - SteamID bans
 - `csgo/cfg/banned_ip.cfg` - IP bans
 - `csgo/addons/counterstrikesharp/plugins/AdminPlus/communication_data.json` - Mute/gag data
+- `csgo/addons/counterstrikesharp/plugins/AdminPlus/discord_config.json` - Discord webhook configuration
 
 ## 📖 Commands
 
@@ -70,6 +75,12 @@ css_addadmin <steamid64> <group> <immunity>  # Add new admin [@css/root]
 css_removeadmin <steamid64>                  # Remove admin [@css/root]
 css_adminlist                                # List all admins [@css/root]
 css_admins                                   # Show online admins [All players]
+```
+
+### 📊 Report System Commands
+```
+css_report <target> <reason>                   # Report a player for admin review [All players]
+css_calladmin <reason>                        # Call admin for help/assistance [All players]
 ```
 
 ### 💬 Communication Commands
@@ -177,10 +188,87 @@ css_cancelvote                                # Cancel active vote [@css/generic
 css_admin                                    # Open admin menu [@css/ban]
 ```
 
+### 📊 Report & Notification System
+```
+css_report <target> <reason>                   # Report a player [All players]
+css_calladmin <reason>                        # Call admin assistance [All players]
+```
+
 ### 📚 Help Commands
 ```
 css_adminhelp                                # Show detailed command help [@css/generic]
 ```
+
+## 🔗 Discord Configuration
+
+Discord entegrasyonu için `csgo/addons/counterstrikesharp/plugins/AdminPlus/discord_config.json` dosyasını oluşturun:
+
+```json
+{
+  "discordWebhooks": {
+    "banWebhook": "https://discord.com/api/webhooks/0123456789/abc123def456",
+    "adminActionsWebhook": "https://discord.com/api/webhooks/0123456789/xyz789ghi012", 
+    "communicationWebhook": "https://discord.com/api/webhooks/0123456789/jkl345mno678",
+    "serverStatusWebhook": "https://discord.com/api/webhooks/0123456789/pqr901stu234",
+    "connectionLogsWebhook": "https://discord.com/api/webhooks/0123456789/vwx567yza890",
+    "chatLogsWebhook": "https://discord.com/api/webhooks/0123456789/bcd123efg456",
+    "reportAndCalladminWebhook": "https://discord.com/api/webhooks/0123456789/hij789klm012",
+    "reportAndCalladminWebhookMentionUserId": "@everyone"
+  }
+}
+```
+
+**⚠️ Açıklama / Description:**
+- 🇹🇷 Her webhook URL'nizi Discord Kanal Ayarları > Entegrasyonlar > Webhooks bölümünden kopyalayabilirsiniz.
+- 🇺🇸 You can copy your webhook URLs from Discord Channel Settings > Integrations > Webhooks section.
+
+#### 📊 Discord Webhook Kanal Bilgilendirmesi:
+- **🔨 banWebhook**: 
+  - 🇺🇸 Sends detailed information to your Discord channel for ban and unban operations
+- **⚡ adminActionsWebhook**: 
+  - 🇺🇸 Sends notifications to Discord channel for admin commands (kick, slay, teleport, etc.)
+- **💬 communicationWebhook**: 
+  - 🇺🇸 Sends logs to Discord channel for mute, gag, silence operations
+- **🖥️ serverStatusWebhook**: 
+  - 🇺🇸 Sends server status and player information to Discord channel
+- **🔌 connectionLogsWebhook**: 
+  - 🇺🇸 Sends player join/leave information to Discord channel
+- **💭 chatLogsWebhook**: 
+  - 🇺🇸 Sends in-game messages to Discord channel
+- **📢 reportAndCalladminWebhook**: 
+  - 🇺🇸 Sends notifications to your Discord channel for report and calladmin operations
+
+### 📸 Discord Log Özellikleri
+
+Check the images folder examples to see how your Discord logs will look:
+
+#### 🖥️ **Server Status Logs**
+![Server Status](/images/ServerStatus.png)
+- 🇺🇸 Server status and player count
+
+#### 🔨 **Ban Management Logs**
+![Ban Logs](/images/Ban.png)
+- 🇺🇸 Details of ban and unban operations
+
+#### ⚡ **Admin Commands Logs**
+![Admin Commands](/images/AdminCommand.png)
+- 🇺🇸 Commands and operations used by admins
+
+#### 💬 **Communication Logs**
+![Communication Logs](/images/MuteGag.png)
+- 🇺🇸 Mute, gag, silence operations
+
+#### 🔌 **Connection & Disconnect Logs**
+![Connection Disconnect](/images/ConnectionDisconnect.png)
+- 🇺🇸 Player join/leave logs
+
+#### 💭 **Chat Message Logs**
+![Chat Logs](/images/ChatLog.png)
+- 🇺🇸 In-game message logs
+
+#### 📢 **Report & CallAdmin Logs**
+![Report Logs](/images/CallReportLog.png)
+- 🇺🇸 Player report and admin calling logs
 
 ## 🎮 Advanced Menu System
 
@@ -205,16 +293,21 @@ The plugin features a powerful easy menu system powered by [MenuManagerCS2](http
 
 ## 🌍 Localization
 
-The plugin currently supports **English** and **French** languages with customizable messages through translation files.
+The plugin currently supports **English**, **Turkish**, **French**, **Russian**, and **German** languages with customizable messages through translation files.
 
-### 🚀 Multi-language Support Coming Soon!
+### 🌍 Multi-language Support
 
-We're working on adding support for multiple languages including:
-- 🇫🇷 French (Français) ✅ - ( Thanks to felyjyn )
-- 🇹🇷 Turkish (Türkçe)
-- 🇩🇪 German (Deutsch)
+Current language support:
+- 🇺🇸 **English** - Primary language ✅
+- 🇹🇷 **Turkish** - Full translation with modern color-coded messages ✅
+- 🇫🇷 **French** - Full translation with modern color-coded messages (Thanks to felyjyn) ✅
+- 🇷🇺 **Russian** - Full translation with modern color-coded messages added in v1.0.3 ✅
+- 🇩🇪 **German** - Full translation with modern color-coded messages added in v1.0.3 ✅
+
+### 🚀 More Languages Coming Soon!
+
+We're working on adding support for additional languages:
 - 🇪🇸 Spanish (Español)
-- 🇷🇺 Russian (Русский)
 - 🇦🇷 Arabic (العربية)
 - 🇮🇷 Farsi (فارسی)
 - 🇱🇻 Latvian (Latviešu)
@@ -254,15 +347,6 @@ All admin actions are logged to:
 
 Logs include timestamp, admin name, action performed, target, and reason.
 
-## 🛠️ Target Selection
-
-Most commands support flexible target selection:
-
-- **Player Name**: `PlayerName` or partial name
-- **User ID**: `#1`, `#2`, etc.
-- **SteamID**: Full SteamID64
-- **Team Targets**: `@t` (terrorist), `@ct` (counter-terrorist), `@spec` (spectator), `@all` (all players)
-
 ## 🎯 Map Aliases
 
 Quick map access with aliases:
@@ -278,31 +362,35 @@ Quick map access with aliases:
 
 ## 📋 Changelog
 
-### 🎉 Version 1.0.2 (Latest)
-- 🔒 **Security Enhancements**: Permission bypass protection with 14 different security checks (Thanks to justburak for feedback)
-- ✅ **Input Validation**: All inputs are properly validated
-- 🛡️ **Immunity System**: Admin level protection system
-- 🖥️ **Console Menu Fix**: Fixed console command `css_admin` not opening admin menu (Thanks to flsflameboy1 for help)
-- 🇫🇷 **French Translation**: Added complete French language support (Thanks to felyjyn for translation)
-- 💬 **Chat System Improvements**: Admin @ messages properly colored
-- 📊 **Detailed Vote Results**: Vote counts with winner/tie display
-- 🗳️ **Single Map Voting**: Support for single map votes with Yes/No options
-- 🎮 **Menu Persistence**: Fixed vote menu reopening issues
-- 🗺️ **Map Change Fix**: Fixed map not changing after successful votes
+### 🎉 Version 1.0.3 (Latest)
+- 📊 **NEW: Report System**: Player-to-player reporting with `/report` and `/calladmin` commands
+- 🔗 **Advanced Discord Integration**: **7 diferent webhook types** for comprehensive logging:
+  - 🔨 **Ban Logs**: Real-time ban/unban notifications
+  - ⚡ **Admin Commands**: All admin command logs (slay, noclip, god, teleport, etc.)
+  - 💬 **Communication Logs**: Mute, gag, silence operations logging
+  - 🖥️ **Server Status**: Live server monitoring with player counts and uptime
+  - 🔌 **Connection Logs**: Player join/leave activity tracking
+  - 💭 **Chat Logs**: In-game message logging for moderation
+  - 📢 **Reports & CallAdmin**: Player report notifications with mentions
+- ☁️ **Advanced Machine Integration**: Automatic Discord connection backup and failover protection
+- 🌍 **Language Support**: Russian 🇷🇺 and German 🇩🇪 translations added
+- 🛡️ **Security Enhancements**: Advanced input validation and memory leak protection
+- ⚡ **Performance Improvements**: Code cleanup, debug log removal, and memory optimization
+- 🔧 **Bug Fixes**: 
+  - Fixed map re-opening issue on first map changes
+  - Enhanced command improvements and user experience
+  - Memory leak protection and garbage collection cleanup
+- 🎯 **Menu Integration**: Report commands integrated into admin menu system
+- 🔒 **Cooldown System**: 3-minute report cooldown with custom messages
+- 🔔 **Smart Notifications**: Intelligent admin mention system for reports
+- 🧹 **Memory Management**: Complete cleanup of unused objects and optimized cache
 
-### 🎉 Version 1.0.1
-- ✨ **MenuManager Integration**: Added advanced easy menu system with MenuManager dependency
-- 🏷️ **Prefix System**: Centralized prefix management from language files
-- 🐛 **Fixed hrespawn**: Players now respawn at their last death position instead of team spawn
-- 🧹 **Code Cleanup**: Removed unused reservation status command
-- 📝 **Translation Updates**: Cleaned up language files
 
 ## 🗺️ Roadmap
 
-### 🚀 Upcoming Features (v1.0.3)
-- 🌍 **Multi-language Support**: Complete translation system with 12+ languages
-- 🔗 **Discord Integration**: Real-time notifications and logging to Discord channels
-
+### 🚀 Upcoming Features (v1.0.4+)
+- 🌍 **Expanded Multi-language Support**: Complete translation system with 12+ languages
+- 🔧 **Code Improvements & Bug Fixes**: Performance optimizations, security patches, bug fixes, and stability enhancements
 
 ## 🆘 Support
 
@@ -310,7 +398,7 @@ Quick map access with aliases:
 If you encounter any issues or bugs:
 1. Check the [GitHub Issues](https://github.com/debr1sj/CS2-AdminPlus/issues) first
 2. Create a new issue with:
-   - **Plugin version**: AdminPlus v1.0.2
+   - **Plugin version**: AdminPlus v1.0.3
    - **CounterStrikeSharp version**: Your CSS version
    - **Error logs**: Any console errors
    - **Steps to reproduce**: How to trigger the bug
@@ -326,7 +414,7 @@ If you encounter any issues or bugs:
 ### 🔧 **Common Issues**
 - **Plugin not loading**: Check CounterStrikeSharp installation
 - **Commands not working**: Verify admin permissions in `admins.json`
-- **Language files**: Ensure `lang/en.json` is in correct directory
+- **Language files**: Ensure `lang/en.json`, `tr.json`, `fr.json`, `de.json`, `ru.json` are in correct directory
 
 ---
 

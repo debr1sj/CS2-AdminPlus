@@ -1136,7 +1136,10 @@ public partial class AdminPlus
                 PlayerExtensions.PrintToAll(Localizer["Map.Changed", admin.PlayerName, map]);
                 AddTimer(2.0f, () =>
                 {
-                    try { Server.ExecuteCommand($"changelevel {map}"); }
+                    try 
+                    { 
+                        Server.ExecuteCommand($"changelevel {map}"); 
+                    }
                     catch (Exception ex)
                     {
                         Console.WriteLine($"[AdminPlus] Map change error: {ex.Message}");

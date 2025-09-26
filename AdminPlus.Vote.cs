@@ -9,9 +9,9 @@ using CounterStrikeSharp.API.ValveConstants.Protobuf;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace AdminPlus;
 
@@ -612,6 +612,9 @@ public partial class AdminPlus
 
             _targetPlayer.Disconnect(NetworkDisconnectionReason.NETWORK_DISCONNECT_STEAM_BANNED);
             PlayerExtensions.PrintToAll(Localizer["VoteBan.Success", _targetPlayer.PlayerName]);
+            
+            string durationText = $"{minutes} dakika";
+            _ = Discord.SendBanLog(playerName, steamId, ip, "Vote System", reason, durationText, false, this);
         }
     }
 

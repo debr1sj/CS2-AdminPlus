@@ -13,6 +13,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading.Tasks;
 
 namespace AdminPlus;
 
@@ -126,8 +127,9 @@ public partial class AdminPlus
         AddCommand("css_silence", "Mute+Gag a player from console", CmdSilence);
         AddCommand("css_unsilence", "Remove mute+gag from a player (console)", CmdUnsilence);
         
-        AddCommand("css_cleanexpired", "Clean expired punishments manually", CmdCleanExpired);
         AddCommand("css_cleanall", "Clean all punishments manually", CmdCleanAll);
+        AddCommand("css_cleanmute", "Clean all mute punishments manually", CmdCleanMute);
+        AddCommand("css_cleangag", "Clean all gag punishments manually", CmdCleanGag);
         
     }
 
@@ -137,6 +139,7 @@ public partial class AdminPlus
         {
             if (File.Exists(CommunicationDataPath))
             {
+                Console.WriteLine($"[AdminPlus] Loading communication data from: {CommunicationDataPath}");
                 var json = File.ReadAllText(CommunicationDataPath);
                 var allPunishments = JsonSerializer.Deserialize<List<CommunicationPunishment>>(json) ?? new List<CommunicationPunishment>();
 
@@ -156,7 +159,9 @@ public partial class AdminPlus
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[AdminPlus] Error loading communication data: {ex.Message}");
+            Console.WriteLine($"[AdminPlus] ERROR: Failed to load communication data from {CommunicationDataPath}");
+            Console.WriteLine($"[AdminPlus] ERROR: {ex.Message}");
+            Console.WriteLine($"[AdminPlus] ERROR: Stack trace: {ex.StackTrace}");
         }
     }
 
@@ -218,13 +223,16 @@ public partial class AdminPlus
     {
         try
         {
+            Console.WriteLine($"[AdminPlus] Saving communication data to: {CommunicationDataPath}");
             var options = new JsonSerializerOptions { WriteIndented = true };
             var json = JsonSerializer.Serialize(_communicationPunishments, options);
             File.WriteAllText(CommunicationDataPath, json);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[AdminPlus] Error saving communication data: {ex.Message}");
+            Console.WriteLine($"[AdminPlus] ERROR: Failed to save communication data to {CommunicationDataPath}");
+            Console.WriteLine($"[AdminPlus] ERROR: {ex.Message}");
+            Console.WriteLine($"[AdminPlus] ERROR: Stack trace: {ex.StackTrace}");
         }
     }
 
@@ -312,8 +320,10 @@ public partial class AdminPlus
         return _communicationPunishments.Any(p => p.SteamID == steamId && p.Type == type && !p.IsExpired);
     }
 
-    private void RemovePunishment(ulong steamId, string type)
+    private void RemovePunishment(ulong steamId, string type, CCSPlayerController? caller = null)
     {
+        var punishment = _communicationPunishments.FirstOrDefault(p => p.SteamID == steamId && p.Type == type);
+        
         int removedCount = _communicationPunishments.RemoveAll(p => p.SteamID == steamId && p.Type == type);
 
         if (_commStates.TryGetValue(steamId, out var state))
@@ -332,6 +342,14 @@ public partial class AdminPlus
         if (removedCount > 0)
         {
             Console.WriteLine($"[AdminPlus] {type} punishment removed and file updated. SteamID: {steamId}");
+            
+            if (punishment != null)
+            {
+                string executorName = GetExecutorName(caller);
+                AddTimer(0.1f, () => {
+                    _ = Discord.SendCommunicationLog(punishment.PlayerName, steamId, executorName, caller?.SteamID ?? 0, punishment.Reason, 0, type, false, this);
+                });
+            }
         }
 
         if (type == "MUTE")
@@ -488,8 +506,8 @@ public partial class AdminPlus
             return;
         }
 
-        RemovePunishment(target.SteamID, "MUTE");
-        RemovePunishment(target.SteamID, "GAG");
+        RemovePunishment(target.SteamID, "MUTE", caller);
+        RemovePunishment(target.SteamID, "GAG", caller);
 
         string executorName = GetExecutorName(caller);
         string targetName = SanitizeName(target.PlayerName);
@@ -550,6 +568,10 @@ public partial class AdminPlus
         }
 
         SaveCommunicationData();
+
+        AddTimer(0.1f, () => {
+            _ = Discord.SendCommunicationLog(target.PlayerName, target.SteamID, executorName, caller?.SteamID ?? 0, reason, duration, type, true, this);
+        });
     }
 
     private void HandlePunishment(CCSPlayerController? caller, CommandInfo info, string type)
@@ -617,7 +639,7 @@ public partial class AdminPlus
             return;
         }
 
-        RemovePunishment(target.SteamID, type);
+        RemovePunishment(target.SteamID, type, caller);
 
         string executorName = GetExecutorName(caller);
         string targetName = SanitizeName(target.PlayerName);
@@ -846,38 +868,6 @@ public partial class AdminPlus
         return HookResult.Continue;
     }
 
-    private void CmdCleanExpired(CCSPlayerController? caller, CommandInfo info)
-    {
-        if (caller != null && (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/root")))
-        {
-            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
-            return;
-        }
-
-        int beforeCount = _communicationPunishments.Count;
-        
-        var expiredPunishments = _communicationPunishments.Where(p => p.IsExpired).ToList();
-        
-        if (expiredPunishments.Any())
-        {
-            Console.WriteLine($"[AdminPlus] Expired punishments to be cleaned:");
-            foreach (var punishment in expiredPunishments)
-            {
-                Console.WriteLine($"  - {punishment.PlayerName} ({punishment.SteamID}) - {punishment.Type} - {punishment.Duration} minutes");
-            }
-        }
-        
-        CheckExpiredPunishments();
-        int afterCount = _communicationPunishments.Count;
-        int cleanedCount = beforeCount - afterCount;
-
-        string message = $"[AdminPlus] Expired punishment cleanup completed. Cleaned: {cleanedCount}, Remaining: {afterCount}";
-        
-        if (caller != null && caller.IsValid)
-            caller.Print(message);
-        else
-            Console.WriteLine(message);
-    }
 
     private void CmdCleanAll(CCSPlayerController? caller, CommandInfo info)
     {
@@ -905,6 +895,64 @@ public partial class AdminPlus
             caller.Print(Localizer["CleanAll.Success", beforeCount, 0]);
         else
             Console.WriteLine(Localizer["CleanAll.Console", beforeCount, 0]);
+            
+        LogAction($"All communication punishments cleared by {GetExecutorName(caller)}. Count: {beforeCount}");
+    }
+
+    private void CmdCleanMute(CCSPlayerController? caller, CommandInfo info)
+    {
+        if (caller != null && (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/root")))
+        {
+            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
+            return;
+        }
+
+        int beforeCount = _communicationPunishments.Count(p => p.Type == "MUTE");
+        
+        _communicationPunishments.RemoveAll(p => p.Type == "MUTE");
+        
+        var muteKeys = _commStates.Where(kvp => kvp.Value.Mute != null).Select(kvp => kvp.Key).ToList();
+        foreach (var key in muteKeys)
+        {
+            _commStates[key].Mute = null;
+        }
+        
+        SaveCommunicationData();
+        
+        if (caller != null && caller.IsValid)
+            caller.Print(Localizer["CleanMute.Success", beforeCount]);
+        else
+            Console.WriteLine(Localizer["CleanMute.Console", beforeCount]);
+            
+        LogAction($"All mute punishments cleared by {GetExecutorName(caller)}. Count: {beforeCount}");
+    }
+
+    private void CmdCleanGag(CCSPlayerController? caller, CommandInfo info)
+    {
+        if (caller != null && (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/root")))
+        {
+            if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
+            return;
+        }
+
+        int beforeCount = _communicationPunishments.Count(p => p.Type == "GAG");
+        
+        _communicationPunishments.RemoveAll(p => p.Type == "GAG");
+        
+        var gagKeys = _commStates.Where(kvp => kvp.Value.Gag != null).Select(kvp => kvp.Key).ToList();
+        foreach (var key in gagKeys)
+        {
+            _commStates[key].Gag = null;
+        }
+        
+        SaveCommunicationData();
+        
+        if (caller != null && caller.IsValid)
+            caller.Print(Localizer["CleanGag.Success", beforeCount]);
+        else
+            Console.WriteLine(Localizer["CleanGag.Console", beforeCount]);
+            
+        LogAction($"All gag punishments cleared by {GetExecutorName(caller)}. Count: {beforeCount}");
     }
 
     public void CleanupCommunication()

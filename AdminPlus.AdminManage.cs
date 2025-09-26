@@ -22,15 +22,26 @@ public partial class AdminPlus
         root = new JsonObject();
         try
         {
-            if (!File.Exists(AdminsFile)) return false;
+            if (!File.Exists(AdminsFile)) 
+            {
+                Console.WriteLine($"[AdminPlus] ERROR: Admin file not found: {AdminsFile}");
+                return false;
+            }
+            Console.WriteLine($"[AdminPlus] Loading admin data from: {AdminsFile}");
             var text = File.ReadAllText(AdminsFile, Encoding.UTF8);
             var node = JsonNode.Parse(text) as JsonObject;
-            if (node != null) { root = node; return true; }
+            if (node != null) 
+            { 
+                root = node; 
+                return true; 
+            }
             return false;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[AdminPlus][AdminManage] JSON parse error: {ex.Message}");
+            Console.WriteLine($"[AdminPlus] ERROR: Failed to load admin data from {AdminsFile}");
+            Console.WriteLine($"[AdminPlus] ERROR: JSON parse error: {ex.Message}");
+            Console.WriteLine($"[AdminPlus] ERROR: Stack trace: {ex.StackTrace}");
             return false;
         }
     }
@@ -47,14 +58,18 @@ public partial class AdminPlus
             Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
         });
 
+        Console.WriteLine($"[AdminPlus] Saving admin data to: {AdminsFile}");
         File.WriteAllText(tmp, json, Encoding.UTF8);
         try
         {
             if (File.Exists(AdminsFile)) File.Replace(tmp, AdminsFile, null);
             else File.Move(tmp, AdminsFile);
         }
-        catch
+        catch (Exception ex)
         {
+            Console.WriteLine($"[AdminPlus] ERROR: Failed to save admin data to {AdminsFile}");
+            Console.WriteLine($"[AdminPlus] ERROR: {ex.Message}");
+            Console.WriteLine($"[AdminPlus] ERROR: Stack trace: {ex.StackTrace}");
             if (File.Exists(AdminsFile)) File.Delete(AdminsFile);
             File.Move(tmp, AdminsFile);
         }

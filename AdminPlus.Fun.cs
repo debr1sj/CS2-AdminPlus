@@ -42,6 +42,8 @@ public partial class AdminPlus
 
         RemoveAllFunTimers(p);
 
+        _lastDeathPosFun.Remove(p.SteamID);
+
         AddTimer(0.05f, () =>
         {
             if (!p.IsValid) return;
@@ -305,6 +307,20 @@ public partial class AdminPlus
         catch { pawn.VelocityModifier = on ? 2.5f : 1.0f; }
         Utilities.SetStateChanged(pawn, "CBaseEntity", "m_MoveType");
     }
+    
+    private static bool HasActiveTimer(CCSPlayerController player, FunTimer timerType)
+    {
+        if (_instance?._funTimers == null) return false;
+        if (!_instance._funTimers.TryGetValue(player.SteamID, out var timers)) return false;
+        if (timers == null) return false;
+        return timers.TryGetValue(timerType, out var timer) && timer != null;
+    }
+    
+    private static bool IsGodModeActive(CCSPlayerController player)
+    {
+        var pawn = player.PlayerPawn?.Value;
+        return pawn != null && !pawn.TakesDamage;
+    }
     private static void BuryPawn(CCSPlayerController target, float dz)
     {
         var pawn = target.PlayerPawn?.Value; if (pawn?.AbsOrigin == null) return;
@@ -419,14 +435,31 @@ public partial class AdminPlus
 
     private void CmdBeacon(CCSPlayerController? caller, CommandInfo info)
     {
-        if (info.ArgCount < 3) { SendUsageMessage(caller, "Fun.Beacon.Usage", "Usage: css_beacon <target> <0|1>"); return; }
+        if (info.ArgCount < 2) { SendUsageMessage(caller, "Fun.Beacon.Usage", "Usage: css_beacon <target> [0|1]"); return; }
         if (!ResolveTargets(caller, info.GetArg(1), false, true, false, out var players, out var admin, out var label, out _, allowBots: true))
         { SendErrorMessage(caller, "OnlyAlive", Localizer["OnlyAlive"]); return; }
-        if (!int.TryParse(info.GetArg(2), out var val)) { SendErrorMessage(caller, "MustBeInteger", Localizer["MustBeInteger"]); return; }
+        
+        int val = -1; // -1 = toggle, 0 = off, 1 = on
+        if (info.ArgCount >= 3)
+        {
+            if (!int.TryParse(info.GetArg(2), out val)) { SendErrorMessage(caller, "MustBeInteger", Localizer["MustBeInteger"]); return; }
+        }
 
         foreach (var t in players)
         {
-            if (val > 0)
+            bool wasBeaconActive = HasActiveTimer(t, FunTimer.Beacon);
+            
+            bool shouldActivate = val switch
+            {
+                -1 => !wasBeaconActive, 
+                0 => false,            
+                1 => true,             
+                _ => !wasBeaconActive  
+            };
+            
+            string action = shouldActivate ? "applied" : "removed";
+            
+            if (shouldActivate)
             {
                 StopTimer(t, FunTimer.Beacon);
                 var beaconTimer = AddTimer(3.0f, () =>
@@ -451,9 +484,27 @@ public partial class AdminPlus
                 RememberTimer(t, FunTimer.Beacon, beaconTimer);
             }
             else StopTimer(t, FunTimer.Beacon);
+            
+            Announce("css_beacon<player>", "css_beacon<multiple>", admin, label, action);
+            AdminPlus.LogAction($"{admin} {action} beacon to {label}");
+            
         }
-        string action = val > 0 ? "applied" : "removed";
-        Announce("css_beacon<player>", "css_beacon<multiple>", admin, label, action);
+        
+        AddTimer(0.1f, () => {
+            foreach (var target in players)
+            {
+                bool wasBeaconActive = HasActiveTimer(target, FunTimer.Beacon);
+                bool shouldActivate = val switch
+                {
+                    -1 => !wasBeaconActive,
+                    0 => false,
+                    1 => true,
+                    _ => !wasBeaconActive
+                };
+                string action = shouldActivate ? "applied" : "removed";
+                _ = Discord.SendAdminActionLog("beacon", target.PlayerName, target.SteamID, admin, caller?.SteamID ?? 0UL, action, this);
+            }
+        });
     }
 
     private void CmdFreeze(CCSPlayerController? caller, CommandInfo info)
@@ -513,6 +564,15 @@ public partial class AdminPlus
         }
         string duration = seconds > 0 ? $"{seconds}" : "permanent";
         Announce("css_freeze<player>", "css_freeze<multiple>", admin, label, duration);
+        
+        AdminPlus.LogAction($"{admin} froze {label} for {duration}");
+        
+        AddTimer(0.1f, () => {
+            foreach (var target in players)
+            {
+                _ = Discord.SendAdminActionLog("freeze", target.PlayerName, target.SteamID, admin, caller?.SteamID ?? 0UL, duration, this);
+            }
+        });
     }
 
     private void CmdUnfreeze(CCSPlayerController? caller, CommandInfo info)
@@ -535,6 +595,15 @@ public partial class AdminPlus
             _freezeAnchor.Remove(t.SteamID);
         }
         Announce("css_unfreeze<player>", "css_unfreeze<multiple>", admin, label);
+        
+        AdminPlus.LogAction($"{admin} unfroze {label}");
+        
+        AddTimer(0.1f, () => {
+            foreach (var target in players)
+            {
+                _ = Discord.SendAdminActionLog("unfreeze", target.PlayerName, target.SteamID, admin, caller?.SteamID ?? 0UL, "", this);
+            }
+        });
     }
 
     private void CmdGravity(CCSPlayerController? caller, CommandInfo info)
@@ -551,6 +620,12 @@ public partial class AdminPlus
         string message = Localizer["Cvar.Changed", admin, oldValue.ToString(), value.ToString()];
         
         PlayerExtensions.PrintToAll(message);
+        
+        AdminPlus.LogAction($"{admin} changed gravity from {oldValue} to {value}");
+        
+        AddTimer(0.1f, () => {
+            _ = Discord.SendAdminActionLog("gravity", "Server", 0UL, admin, caller?.SteamID ?? 0UL, $"{oldValue} → {value}", this);
+        });
     }
 
     private void CmdRespawn(CCSPlayerController? caller, CommandInfo info)
@@ -561,6 +636,15 @@ public partial class AdminPlus
 
         foreach (var t in deadPlayers) SafeRespawn(t);
         Announce("css_respawn<player>", "css_respawn<multiple>", admin, label);
+        
+        AdminPlus.LogAction($"{admin} respawned {label}");
+        
+        AddTimer(0.1f, () => {
+            foreach (var target in deadPlayers)
+            {
+                _ = Discord.SendAdminActionLog("respawn", target.PlayerName, target.SteamID, admin, caller?.SteamID ?? 0UL, "", this);
+            }
+        });
     }
 
     private void SafeRespawn(CCSPlayerController t)
@@ -575,21 +659,54 @@ public partial class AdminPlus
 
     private void CmdNoclip(CCSPlayerController? caller, CommandInfo info)
     {
-        if (info.ArgCount < 3) { SendUsageMessage(caller, "Fun.Noclip.Usage", "Usage: css_noclip <target> <0|1>"); return; }
+        if (info.ArgCount < 2) { SendUsageMessage(caller, "Fun.Noclip.Usage", "Usage: css_noclip <target> [0|1]"); return; }
         if (!ResolveTargets(caller, info.GetArg(1), true, false, false, out var players, out var admin, out var label, out _, true))
         { SendErrorMessage(caller, "NoMatchingClient", Localizer["NoMatchingClient"]); return; }
-        if (!int.TryParse(info.GetArg(2), out var on)) { SendErrorMessage(caller, "MustBeInteger", Localizer["MustBeInteger"]); return; }
+        
+        int on = -1; // -1 = toggle, 0 = off, 1 = on
+        if (info.ArgCount >= 3)
+        {
+            if (!int.TryParse(info.GetArg(2), out on)) { SendErrorMessage(caller, "MustBeInteger", Localizer["MustBeInteger"]); return; }
+        }
+        
         foreach (var t in players)
         {
             var pawn = t.PlayerPawn?.Value; if (pawn == null) continue;
-            bool enable = on > 0;
+            bool isNoclipActive = pawn.MoveType == MoveType_t.MOVETYPE_NOCLIP;
+            
+            bool enable = on switch
+            {
+                -1 => !isNoclipActive, 
+                0 => false,            
+                1 => true,             
+                _ => !isNoclipActive   
+            };
+            
             try { pawn.MoveType = enable ? MoveType_t.MOVETYPE_NOCLIP : MoveType_t.MOVETYPE_WALK; } catch { }
             SetActualMoveType(pawn, enable ? 8 : 2);
             Utilities.SetStateChanged(pawn, "CBaseEntity", "m_MoveType");
             AddTimer(0.05f, () => { if (pawn != null && pawn.IsValid) { try { pawn.MoveType = enable ? MoveType_t.MOVETYPE_NOCLIP : MoveType_t.MOVETYPE_WALK; } catch { } SetActualMoveType(pawn, enable ? 8 : 2); Utilities.SetStateChanged(pawn, "CBaseEntity", "m_MoveType"); } });
             AddTimer(0.15f, () => { if (pawn != null && pawn.IsValid) { try { pawn.MoveType = enable ? MoveType_t.MOVETYPE_NOCLIP : MoveType_t.MOVETYPE_WALK; } catch { } SetActualMoveType(pawn, enable ? 8 : 2); Utilities.SetStateChanged(pawn, "CBaseEntity", "m_MoveType"); } });
+            
+            Announce("css_noclip<player>", "css_noclip<multiple>", admin, label, enable ? Localizer["On"] : Localizer["Off"]);
+            
         }
-        Announce("css_noclip<player>", "css_noclip<multiple>", admin, label, on > 0 ? Localizer["On"] : Localizer["Off"]);
+        
+        AddTimer(0.1f, () => {
+            foreach (var target in players)
+            {
+                var pawn = target.PlayerPawn?.Value; if (pawn == null) continue;
+                bool isNoclipActive = pawn.MoveType == MoveType_t.MOVETYPE_NOCLIP;
+                bool enable = on switch
+                {
+                    -1 => !isNoclipActive,
+                    0 => false,
+                    1 => true,
+                    _ => !isNoclipActive
+                };
+                _ = Discord.SendAdminActionLog("noclip", target.PlayerName, target.SteamID, admin, caller?.SteamID ?? 0UL, enable ? Localizer["On"] : Localizer["Off"], this);
+            }
+        });
     }
 
     private void CmdWeapon(CCSPlayerController? caller, CommandInfo info)
@@ -605,6 +722,15 @@ public partial class AdminPlus
             catch { SendErrorMessage(caller, "WeaponNotFound", Localizer["WeaponNotFound"]); }
         }
         Announce("css_weapon<player>", "css_weapon<multiple>", admin, label, wep);
+        
+        AdminPlus.LogAction($"{admin} gave weapon {wep} to {label}");
+        
+        AddTimer(0.1f, () => {
+            foreach (var target in players)
+            {
+                _ = Discord.SendAdminActionLog("weapon", target.PlayerName, target.SteamID, admin, caller?.SteamID ?? 0UL, wep, this);
+            }
+        });
     }
 
     private void CmdStrip(CCSPlayerController? caller, CommandInfo info)
@@ -646,6 +772,15 @@ public partial class AdminPlus
             }
         }
         Announce("css_strip<player>", "css_strip<multiple>", admin, label, filter);
+        
+        AdminPlus.LogAction($"{admin} stripped {filter} weapons from {label}");
+        
+        AddTimer(0.1f, () => {
+            foreach (var target in players)
+            {
+                _ = Discord.SendAdminActionLog("strip", target.PlayerName, target.SteamID, admin, caller?.SteamID ?? 0UL, "", this);
+            }
+        });
     }
 
     private void CmdSetTeamHp(CCSPlayerController? caller, CommandInfo info)
@@ -676,6 +811,13 @@ public partial class AdminPlus
         { SendErrorMessage(caller, "NoMatchingClient", Localizer["NoMatchingClient"]); return; }
         foreach (var t in players) SetHealth(t, hp);
         Announce("css_hp<player>", "css_hp<multiple>", admin, label, hp);
+        
+        AddTimer(0.1f, () => {
+            foreach (var target in players)
+            {
+                _ = Discord.SendAdminActionLog("hp", target.PlayerName, target.SteamID, admin, caller?.SteamID ?? 0UL, hp.ToString(), this);
+            }
+        });
     }
 
     private void CmdSpeed(CCSPlayerController? caller, CommandInfo info)
@@ -686,6 +828,13 @@ public partial class AdminPlus
         { SendErrorMessage(caller, "NoMatchingClient", Localizer["NoMatchingClient"]); return; }
         foreach (var t in players) SetSpeed(t, mult);
         Announce("css_speed<player>", "css_speed<multiple>", admin, label, mult.ToString("0.##"));
+        
+        AddTimer(0.1f, () => {
+            foreach (var target in players)
+            {
+                _ = Discord.SendAdminActionLog("speed", target.PlayerName, target.SteamID, admin, caller?.SteamID ?? 0UL, mult.ToString("0.##"), this);
+            }
+        });
     }
 
     private void CmdUnSpeed(CCSPlayerController? caller, CommandInfo info)
@@ -695,16 +844,58 @@ public partial class AdminPlus
         { SendErrorMessage(caller, "NoMatchingClient", Localizer["NoMatchingClient"]); return; }
         foreach (var t in players) SetSpeed(t, 1.0f);
         Announce("css_speed<player>", "css_speed<multiple>", admin, label, "1.0");
+        
+        AddTimer(0.1f, () => {
+            foreach (var target in players)
+            {
+                _ = Discord.SendAdminActionLog("unspeed", target.PlayerName, target.SteamID, admin, caller?.SteamID ?? 0UL, "", this);
+            }
+        });
     }
 
     private void CmdGod(CCSPlayerController? caller, CommandInfo info)
     {
-        if (info.ArgCount < 3 || !int.TryParse(info.GetArg(2), out var on))
-        { SendUsageMessage(caller, "Fun.God.Usage", "Usage: css_god <target> <0|1>"); return; }
+        if (info.ArgCount < 2) { SendUsageMessage(caller, "Fun.God.Usage", "Usage: css_god <target> [0|1]"); return; }
         if (!ResolveTargets(caller, info.GetArg(1), true, false, false, out var players, out var admin, out var label, out _, true))
         { SendErrorMessage(caller, "NoMatchingClient", Localizer["NoMatchingClient"]); return; }
-        foreach (var t in players) SetGod(t, on > 0);
-        Announce("css_god<player>", "css_god<multiple>", admin, label, on > 0 ? Localizer["On"] : Localizer["Off"]);
+        
+        int on = -1; // -1 = toggle, 0 = off, 1 = on
+        if (info.ArgCount >= 3)
+        {
+            if (!int.TryParse(info.GetArg(2), out on)) { SendErrorMessage(caller, "MustBeInteger", Localizer["MustBeInteger"]); return; }
+        }
+        
+        foreach (var t in players)
+        {
+            bool isGodActive = IsGodModeActive(t);
+            
+            bool shouldActivate = on switch
+            {
+                -1 => !isGodActive, 
+                0 => false,         
+                1 => true,          
+                _ => !isGodActive   
+            };
+            
+            SetGod(t, shouldActivate);
+            Announce("css_god<player>", "css_god<multiple>", admin, label, shouldActivate ? Localizer["On"] : Localizer["Off"]);
+            
+        }
+        
+        AddTimer(0.1f, () => {
+            foreach (var target in players)
+            {
+                bool isGodActive = IsGodModeActive(target);
+                bool shouldActivate = on switch
+                {
+                    -1 => !isGodActive,
+                    0 => false,
+                    1 => true,
+                    _ => !isGodActive
+                };
+                _ = Discord.SendAdminActionLog("god", target.PlayerName, target.SteamID, admin, caller?.SteamID ?? 0UL, shouldActivate ? Localizer["On"] : Localizer["Off"], this);
+            }
+        });
     }
 
     private void CmdTeam(CCSPlayerController? caller, CommandInfo info)
@@ -723,6 +914,8 @@ public partial class AdminPlus
         if (team == CsTeam.None) { SendErrorMessage(caller, "NoTeam", Localizer["NoTeam"]); return; }
         foreach (var t in players) t.ChangeTeam(team);
         PlayerExtensions.PrintToAll(Localizer["css_team", admin, label, TeamDisplay(team == CsTeam.Terrorist ? TargetScope.TeamT : team == CsTeam.CounterTerrorist ? TargetScope.TeamCT : TargetScope.TeamSpec)]);
+        
+        AdminPlus.LogAction($"{admin} changed team for {label} to {TeamDisplay(team == CsTeam.Terrorist ? TargetScope.TeamT : team == CsTeam.CounterTerrorist ? TargetScope.TeamCT : TargetScope.TeamSpec)}");
     }
 
     private void CmdSwap(CCSPlayerController? caller, CommandInfo info)
@@ -734,6 +927,8 @@ public partial class AdminPlus
         var newTeam = t.Team == CsTeam.CounterTerrorist ? CsTeam.Terrorist : CsTeam.CounterTerrorist;
         t.ChangeTeam(newTeam);
         PlayerExtensions.PrintToAll(Localizer["css_swap", admin, label]);
+        
+        AdminPlus.LogAction($"{admin} swapped {label} to {TeamDisplay(newTeam == CsTeam.Terrorist ? TargetScope.TeamT : TargetScope.TeamCT)}");
     }
 
     private void CmdBury(CCSPlayerController? caller, CommandInfo info)
@@ -743,6 +938,15 @@ public partial class AdminPlus
         { SendErrorMessage(caller, "OnlyAlive", Localizer["OnlyAlive"]); return; }
         foreach (var t in players) BuryPawn(t, -40f);
         Announce("css_bury<player>", "css_bury<multiple>", admin, label);
+        
+        AdminPlus.LogAction($"{admin} buried {label}");
+        
+        AddTimer(0.1f, () => {
+            foreach (var target in players)
+            {
+                _ = Discord.SendAdminActionLog("bury", target.PlayerName, target.SteamID, admin, caller?.SteamID ?? 0UL, "", this);
+            }
+        });
     }
     private void CmdUnBury(CCSPlayerController? caller, CommandInfo info)
     {
@@ -751,6 +955,15 @@ public partial class AdminPlus
         { SendErrorMessage(caller, "OnlyAlive", Localizer["OnlyAlive"]); return; }
         foreach (var t in players) BuryPawn(t, +40f);
         Announce("css_unbury<player>", "css_unbury<multiple>", admin, label);
+        
+        AdminPlus.LogAction($"{admin} unburied {label}");
+        
+        AddTimer(0.1f, () => {
+            foreach (var target in players)
+            {
+                _ = Discord.SendAdminActionLog("unbury", target.PlayerName, target.SteamID, admin, caller?.SteamID ?? 0UL, "", this);
+            }
+        });
     }
 
     private void CmdClean(CCSPlayerController? caller, CommandInfo info)
@@ -785,6 +998,10 @@ public partial class AdminPlus
         var fallback = _menuInvokerName;
         var admin = (caller == null || !caller.IsValid) ? (string.IsNullOrEmpty(fallback) ? Localizer["Console"] : fallback) : caller.PlayerName;
         PlayerExtensions.PrintToAll(Localizer["css_clean", admin]);
+        
+        AddTimer(0.1f, () => {
+            _ = Discord.SendAdminActionLog("clean", "Server", 0UL, admin, caller?.SteamID ?? 0UL, "", this);
+        });
     }
 
     private void CmdGoto(CCSPlayerController? caller, CommandInfo info)
@@ -817,6 +1034,10 @@ public partial class AdminPlus
         var dest = new Vector(pos.X + forward.X * 80f, pos.Y + forward.Y * 80f, pos.Z + 5f);
         adminPawn.Teleport(dest, adminPawn.AbsRotation, new Vector(0, 0, 0));
         effectiveInvoker.Print(Localizer["css_goto", effectiveInvoker.PlayerName ?? effectiveInvoker.SteamID.ToString(), target.PlayerName ?? target.SteamID.ToString()]);
+        
+        AddTimer(0.1f, () => {
+            _ = Discord.SendAdminActionLog("goto", target.PlayerName ?? "Unknown", target.SteamID, effectiveInvoker.PlayerName ?? "Unknown", effectiveInvoker.SteamID, "", this);
+        });
     }
 
     private void CmdBring(CCSPlayerController? caller, CommandInfo info)
@@ -850,6 +1071,13 @@ public partial class AdminPlus
             pawn.Teleport(bringPos, pawn.AbsRotation, new Vector(0, 0, 0));
         }
         Announce("css_bring<player>", "css_bring<multiple>", admin, label);
+        
+        AddTimer(0.1f, () => {
+            foreach (var target in players)
+            {
+                _ = Discord.SendAdminActionLog("bring", target.PlayerName ?? "Unknown", target.SteamID, admin ?? "Unknown", effectiveInvoker?.SteamID ?? 0UL, "", this);
+            }
+        });
     }
 
     private void CmdHRespawn(CCSPlayerController? caller, CommandInfo info)
@@ -880,6 +1108,10 @@ public partial class AdminPlus
             AddTimer(1.5f, tp);
 
             PlayerExtensions.PrintToAll(Localizer["css_hrespawn", admin, label]);
+            
+            AddTimer(0.1f, () => {
+                _ = Discord.SendAdminActionLog("hrespawn", t.PlayerName, t.SteamID, admin, caller?.SteamID ?? 0UL, "", this);
+            });
         }
         else SendErrorMessage(caller, "NoDeathPos", Localizer["NoDeathPos"]);
     }
@@ -895,13 +1127,22 @@ public partial class AdminPlus
         {
             foreach (var t in players) GlowPawn(t, Color.White);
             PlayerExtensions.PrintToAll(Localizer["css_glow_off", admin, label]);
+            
         }
         else
         {
             if (!TryParseColor(colorArg, out var color)) { SendErrorMessage(caller, "ColorNotFound", Localizer["ColorNotFound"]); return; }
             foreach (var t in players) GlowPawn(t, color);
             PlayerExtensions.PrintToAll(Localizer["css_glow", admin, label, colorArg]);
+            
         }
+        
+        AddTimer(0.1f, () => {
+            foreach (var target in players)
+            {
+                _ = Discord.SendAdminActionLog("glow", target.PlayerName, target.SteamID, admin, caller?.SteamID ?? 0UL, colorArg, this);
+            }
+        });
     }
 
     private void CmdColor(CCSPlayerController? caller, CommandInfo info)
@@ -951,6 +1192,15 @@ public partial class AdminPlus
             }));
         }
         Announce("css_shake<player>", "css_shake<multiple>", admin, label, sec);
+        
+        AdminPlus.LogAction($"{admin} shook {label} for {sec} seconds");
+        
+        AddTimer(0.1f, () => {
+            foreach (var target in players)
+            {
+                _ = Discord.SendAdminActionLog("shake", target.PlayerName, target.SteamID, admin, caller?.SteamID ?? 0UL, sec.ToString(), this);
+            }
+        });
     }
 
     private void CmdUnShake(CCSPlayerController? caller, CommandInfo info)
@@ -965,6 +1215,8 @@ public partial class AdminPlus
             { try { sh.AcceptInput("StopShake"); sh.Remove(); } catch { } _activeShakes.Remove(t.SteamID); }
         }
         PlayerExtensions.PrintToAll(Localizer["css_unshake", admin, label]);
+        
+        AdminPlus.LogAction($"{admin} unshook {label}");
     }
 
     private void CmdBlind(CCSPlayerController? caller, CommandInfo info)
@@ -988,6 +1240,15 @@ public partial class AdminPlus
             }));
         }
         Announce("css_blind<player>", "css_blind<multiple>", admin, label, sec);
+        
+        AdminPlus.LogAction($"{admin} blinded {label} for {sec} seconds");
+        
+        AddTimer(0.1f, () => {
+            foreach (var target in players)
+            {
+                _ = Discord.SendAdminActionLog("blind", target.PlayerName, target.SteamID, admin, caller?.SteamID ?? 0UL, sec.ToString(), this);
+            }
+        });
     }
 
     private void CmdUnBlind(CCSPlayerController? caller, CommandInfo info)
@@ -997,6 +1258,8 @@ public partial class AdminPlus
         { SendErrorMessage(caller, "OnlyAlive", Localizer["OnlyAlive"]); return; }
         foreach (var t in players) { OverlayBlindOff(t); StopTimer(t, FunTimer.Blind); }
         PlayerExtensions.PrintToAll(Localizer["css_unblind", admin, label]);
+        
+        AdminPlus.LogAction($"{admin} unblinded {label}");
     }
 
     private void CmdDrug(CCSPlayerController? caller, CommandInfo info)
@@ -1033,6 +1296,15 @@ public partial class AdminPlus
             }));
         }
         Announce("css_drug<player>", "css_drug<multiple>", admin, label, sec);
+        
+        AdminPlus.LogAction($"{admin} drugged {label} for {sec} seconds");
+        
+        AddTimer(0.1f, () => {
+            foreach (var target in players)
+            {
+                _ = Discord.SendAdminActionLog("drug", target.PlayerName, target.SteamID, admin, caller?.SteamID ?? 0UL, sec.ToString(), this);
+            }
+        });
     }
 
     private void CmdUnDrug(CCSPlayerController? caller, CommandInfo info)
@@ -1052,6 +1324,8 @@ public partial class AdminPlus
             }
             ColorScreen(t, Color.FromArgb(0, 0, 0, 0), 0, 0.1f, stayout: false, purge: true);
         }
+        
+        AdminPlus.LogAction($"{admin} undrugged {label}");
     }
 }
 
