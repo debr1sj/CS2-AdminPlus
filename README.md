@@ -201,7 +201,7 @@ css_adminhelp                                # Show detailed command help [@css/
 
 ## 🔗 Discord Configuration
 
-Discord entegrasyonu için `csgo/addons/counterstrikesharp/plugins/AdminPlus/discord_config.json` dosyasını oluşturun:
+To set up Discord integration, create the `csgo/addons/counterstrikesharp/plugins/AdminPlus/discord_config.json` file:
 
 ```json
 {
@@ -218,57 +218,56 @@ Discord entegrasyonu için `csgo/addons/counterstrikesharp/plugins/AdminPlus/dis
 }
 ```
 
-**⚠️ Açıklama / Description:**
-- 🇹🇷 Her webhook URL'nizi Discord Kanal Ayarları > Entegrasyonlar > Webhooks bölümünden kopyalayabilirsiniz.
-- 🇺🇸 You can copy your webhook URLs from Discord Channel Settings > Integrations > Webhooks section.
+**⚠️ Description:**
+- You can copy your webhook URLs from Discord Channel Settings > Integrations > Webhooks section.
 
-#### 📊 Discord Webhook Kanal Bilgilendirmesi:
+#### 📊 Discord Webhook Types:
 - **🔨 banWebhook**: 
-  - 🇺🇸 Sends detailed information to your Discord channel for ban and unban operations
+  - Sends detailed information to your Discord channel for ban and unban operations
 - **⚡ adminActionsWebhook**: 
-  - 🇺🇸 Sends notifications to Discord channel for admin commands (kick, slay, teleport, etc.)
+  - Sends notifications to Discord channel for admin commands (kick, slay, teleport, etc.)
 - **💬 communicationWebhook**: 
-  - 🇺🇸 Sends logs to Discord channel for mute, gag, silence operations
+  - Sends logs to Discord channel for mute, gag, silence operations
 - **🖥️ serverStatusWebhook**: 
-  - 🇺🇸 Sends server status and player information to Discord channel
+  - Sends server status and player information to Discord channel
 - **🔌 connectionLogsWebhook**: 
-  - 🇺🇸 Sends player join/leave information to Discord channel
+  - Sends player join/leave information to Discord channel
 - **💭 chatLogsWebhook**: 
-  - 🇺🇸 Sends in-game messages to Discord channel
+  - Sends in-game messages to Discord channel
 - **📢 reportAndCalladminWebhook**: 
-  - 🇺🇸 Sends notifications to your Discord channel for report and calladmin operations
+  - Sends notifications to your Discord channel for report and calladmin operations
 
-### 📸 Discord Log Özellikleri
+### 📸 Discord Log Features
 
 Check the images folder examples to see how your Discord logs will look:
 
 #### 🖥️ **Server Status Logs**
 ![Server Status](/images/ServerStatus.png)
-- 🇺🇸 Server status and player count
+- Server status and player count
 
 #### 🔨 **Ban Management Logs**
 ![Ban Logs](/images/Ban.png)
-- 🇺🇸 Details of ban and unban operations
+- Details of ban and unban operations
 
 #### ⚡ **Admin Commands Logs**
 ![Admin Commands](/images/AdminCommand.png)
-- 🇺🇸 Commands and operations used by admins
+- Commands and operations used by admins
 
 #### 💬 **Communication Logs**
 ![Communication Logs](/images/MuteGag.png)
-- 🇺🇸 Mute, gag, silence operations
+- Mute, gag, silence operations
 
 #### 🔌 **Connection & Disconnect Logs**
 ![Connection Disconnect](/images/ConnectionDisconnect.png)
-- 🇺🇸 Player join/leave logs
+- Player join/leave logs
 
 #### 💭 **Chat Message Logs**
 ![Chat Logs](/images/ChatLog.png)
-- 🇺🇸 In-game message logs
+- In-game message logs
 
 #### 📢 **Report & CallAdmin Logs**
 ![Report Logs](/images/CallReportLog.png)
-- 🇺🇸 Player report and admin calling logs
+- Player report and admin calling logs
 
 ## 🎮 Advanced Menu System
 
