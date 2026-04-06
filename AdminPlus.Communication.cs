@@ -29,6 +29,8 @@ public partial class AdminPlus
     private Timer? _muteEnforceTimer;
     private Timer? _expiredCheckTimer;
     private Timer? _syncTimer;
+    private DateTime _lastCommRefreshUtc = DateTime.MinValue;
+    private DateTime _lastCommDataWriteUtc = DateTime.MinValue;
     private readonly HashSet<string> _allowedChatCommands = new(StringComparer.OrdinalIgnoreCase)
     {
         "rtv", "nominate", "timeleft", "rank", "top", "help", "rules",
@@ -155,6 +157,7 @@ public partial class AdminPlus
                 }
 
                 Console.WriteLine($"[AdminPlus] Loaded {_communicationPunishments.Count} active communication punishments");
+                _lastCommDataWriteUtc = File.GetLastWriteTimeUtc(CommunicationDataPath);
             }
         }
         catch (Exception ex)
@@ -227,6 +230,7 @@ public partial class AdminPlus
             var options = new JsonSerializerOptions { WriteIndented = true };
             var json = JsonSerializer.Serialize(_communicationPunishments, options);
             File.WriteAllText(CommunicationDataPath, json);
+            _lastCommDataWriteUtc = File.GetLastWriteTimeUtc(CommunicationDataPath);
         }
         catch (Exception ex)
         {
@@ -236,12 +240,38 @@ public partial class AdminPlus
         }
     }
 
+    private void TryRefreshCommunicationDataIfChanged()
+    {
+        try
+        {
+            if (!File.Exists(CommunicationDataPath))
+                return;
+
+            var now = DateTime.UtcNow;
+            if ((now - _lastCommRefreshUtc).TotalMilliseconds < 750)
+                return;
+
+            _lastCommRefreshUtc = now;
+            var currentWrite = File.GetLastWriteTimeUtc(CommunicationDataPath);
+            if (currentWrite == _lastCommDataWriteUtc)
+                return;
+
+            // Manual edits or external writes detected; force reload.
+            LoadCommunicationData();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[AdminPlus] Communication cache refresh check failed: {ex.Message}");
+        }
+    }
+
     private void EnforceMutePunishments()
     {
         try
         {
             var players = Utilities.GetPlayers();
 
+            TryRefreshCommunicationDataIfChanged();
             SyncMuteSystemsFromJson();
 
             foreach (var player in players)
@@ -757,6 +787,8 @@ public partial class AdminPlus
         if (player == null || !player.IsValid || player.IsBot)
             return HookResult.Continue;
 
+        TryRefreshCommunicationDataIfChanged();
+
         bool isGagged = IsPlayerPunished(player.SteamID, "GAG") ||
                        (_commStates.TryGetValue(player.SteamID, out var state) &&
                         state.Gag != null && IsPunishmentActive(state.Gag));
@@ -822,6 +854,7 @@ public partial class AdminPlus
         var player = @event.Userid;
         if (player != null && player.IsValid && !player.IsBot)
         {
+            TryRefreshCommunicationDataIfChanged();
             bool isMuted = IsPlayerPunished(player.SteamID, "MUTE") ||
                           (_commStates.TryGetValue(player.SteamID, out var state) &&
                            state.Mute != null && IsPunishmentActive(state.Mute));
@@ -840,6 +873,7 @@ public partial class AdminPlus
         var player = @event.Userid;
         if (player != null && player.IsValid && !player.IsBot)
         {
+            TryRefreshCommunicationDataIfChanged();
             bool isMuted = IsPlayerPunished(player.SteamID, "MUTE") ||
                           (_commStates.TryGetValue(player.SteamID, out var state) &&
                            state.Mute != null && IsPunishmentActive(state.Mute));

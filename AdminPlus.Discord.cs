@@ -51,23 +51,7 @@ public static class Discord
                 var maxPlayers = Server.MaxPlayers;
                 var currentMap = Server.MapName;
                 
-                var serverIp = "0.0.0.0:27015";
-                try
-                {
-                    var ipConVar = ConVar.Find("ip");
-                    if (ipConVar != null && !string.IsNullOrEmpty(ipConVar.StringValue))
-                    {
-                        var ip = ipConVar.StringValue;
-                        if (ip != "0.0.0.0")
-                        {
-                            serverIp = $"{ip}:27015";
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"[AdminPlus] IP detection error: {ex.Message}");
-                }
+                var serverIp = AdminPlus.GetServerAddress();
                 
                 var uptime = GetServerUptime();
                 var timeLeft = GetMapTimeLeft();
@@ -497,7 +481,9 @@ public static class Discord
         {
             foreach (var player in Utilities.GetPlayers().Where(p => p.IsValid && !p.IsBot))
             {
-                if (player.AuthorizedSteamID != null)
+                if (plugin.HasEffectivePermission(player, "@css/root") ||
+                    plugin.HasEffectivePermission(player, "@css/ban") ||
+                    plugin.HasEffectivePermission(player, "@css/generic"))
                 {
                     onlineAdmins++;
                 }
@@ -948,24 +934,7 @@ public static class Discord
             var maxPlayers = Server.MaxPlayers;
             var currentMap = Server.MapName;
             
-            var serverIp = "0.0.0.0:27015";
-            try
-            {
-                var ipConVar = ConVar.Find("ip");
-                if (ipConVar != null && !string.IsNullOrEmpty(ipConVar.StringValue))
-                {
-                    var ip = ipConVar.StringValue;
-                    if (ip != "0.0.0.0")
-                    {
-                        serverIp = $"{ip}:27015";
-                        Console.WriteLine($"[AdminPlus] IP found via ConVar: {serverIp}");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[AdminPlus] IP detection error: {ex.Message}");
-            }
+            var serverIp = AdminPlus.GetServerAddress();
             
             var uptime = GetServerUptime();
             var timeLeft = GetMapTimeLeft();

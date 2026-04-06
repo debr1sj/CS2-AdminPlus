@@ -17,7 +17,7 @@ Advanced CounterStrikeSharp admin plugin with comprehensive features: ban/kick s
 - 📢 **Chat Commands**: Admin say, center say, HUD messages
 - 🔒 **Reservation System**: Admin priority slots and player management
 - 📊 **Report System**: Player-to-player reporting with Discord integration  
-- 🌍 **Multi-language**: English, Turkish, French, Russian, German support
+- 🌍 **Multi-language**: English, Turkish, French, Russian, German, and Brazilian Portuguese support
 - 📝 **Advanced Logging**: All actions logged to files and 7 different Discord webhook channels
 - 🔗 **Discord Integration**: Server status, ban logs, admin commands, communication logs, connection tracking, chat logs, and report system
 - 🔔 **Smart Notifications**: Intelligent admin alerts based on action importance and type
@@ -42,7 +42,7 @@ AdminPlus requires the following plugins to be installed:
 
 1. Download the latest release
 2. Extract all files from the zip to `csgo/addons/counterstrikesharp/plugins/`
-3. Copy language files to `csgo/addons/counterstrikesharp/AdminPlus/lang/`
+3. Copy language files to `csgo/addons/counterstrikesharp/plugins/AdminPlus/lang/`
 4. Restart your server
 
 ## ⚙️ Configuration
@@ -93,7 +93,6 @@ css_silence <target> [duration] [reason]    # Mute + gag player [@css/chat]
 css_unsilence <target>                      # Remove mute + gag [@css/chat]
 css_mutelist                                # Show muted players [@css/chat]
 css_gaglist                                 # Show gagged players [@css/chat]
-css_cleanexpired                            # Clean expired punishments [@css/root]
 css_cleanall                                # Clean all punishments [@css/root]
 css_cleanmute                               # Clean all mute records [@css/root]
 css_cleangag                                # Clean all gag records [@css/root]
@@ -201,7 +200,7 @@ css_adminhelp                                # Show detailed command help [@css/
 
 ## 🔗 Discord Configuration
 
-To set up Discord integration, create the `csgo/addons/counterstrikesharp/plugins/AdminPlus/discord_config.json` file:
+Discord entegrasyonu için `csgo/addons/counterstrikesharp/plugins/AdminPlus/discord_config.json` dosyasını oluşturun:
 
 ```json
 {
@@ -218,56 +217,57 @@ To set up Discord integration, create the `csgo/addons/counterstrikesharp/plugin
 }
 ```
 
-**⚠️ Description:**
-- You can copy your webhook URLs from Discord Channel Settings > Integrations > Webhooks section.
+**⚠️ Açıklama / Description:**
+- 🇹🇷 Her webhook URL'nizi Discord Kanal Ayarları > Entegrasyonlar > Webhooks bölümünden kopyalayabilirsiniz.
+- 🇺🇸 You can copy your webhook URLs from Discord Channel Settings > Integrations > Webhooks section.
 
-#### 📊 Discord Webhook Types:
+#### 📊 Discord Webhook Kanal Bilgilendirmesi:
 - **🔨 banWebhook**: 
-  - Sends detailed information to your Discord channel for ban and unban operations
+  - 🇺🇸 Sends detailed information to your Discord channel for ban and unban operations
 - **⚡ adminActionsWebhook**: 
-  - Sends notifications to Discord channel for admin commands (kick, slay, teleport, etc.)
+  - 🇺🇸 Sends notifications to Discord channel for admin commands (kick, slay, teleport, etc.)
 - **💬 communicationWebhook**: 
-  - Sends logs to Discord channel for mute, gag, silence operations
+  - 🇺🇸 Sends logs to Discord channel for mute, gag, silence operations
 - **🖥️ serverStatusWebhook**: 
-  - Sends server status and player information to Discord channel
+  - 🇺🇸 Sends server status and player information to Discord channel
 - **🔌 connectionLogsWebhook**: 
-  - Sends player join/leave information to Discord channel
+  - 🇺🇸 Sends player join/leave information to Discord channel
 - **💭 chatLogsWebhook**: 
-  - Sends in-game messages to Discord channel
+  - 🇺🇸 Sends in-game messages to Discord channel
 - **📢 reportAndCalladminWebhook**: 
-  - Sends notifications to your Discord channel for report and calladmin operations
+  - 🇺🇸 Sends notifications to your Discord channel for report and calladmin operations
 
-### 📸 Discord Log Features
+### 📸 Discord Log Özellikleri
 
 Check the images folder examples to see how your Discord logs will look:
 
 #### 🖥️ **Server Status Logs**
 ![Server Status](/images/ServerStatus.png)
-- Server status and player count
+- 🇺🇸 Server status and player count
 
 #### 🔨 **Ban Management Logs**
 ![Ban Logs](/images/Ban.png)
-- Details of ban and unban operations
+- 🇺🇸 Details of ban and unban operations
 
 #### ⚡ **Admin Commands Logs**
 ![Admin Commands](/images/AdminCommand.png)
-- Commands and operations used by admins
+- 🇺🇸 Commands and operations used by admins
 
 #### 💬 **Communication Logs**
 ![Communication Logs](/images/MuteGag.png)
-- Mute, gag, silence operations
+- 🇺🇸 Mute, gag, silence operations
 
 #### 🔌 **Connection & Disconnect Logs**
 ![Connection Disconnect](/images/ConnectionDisconnect.png)
-- Player join/leave logs
+- 🇺🇸 Player join/leave logs
 
 #### 💭 **Chat Message Logs**
 ![Chat Logs](/images/ChatLog.png)
-- In-game message logs
+- 🇺🇸 In-game message logs
 
 #### 📢 **Report & CallAdmin Logs**
 ![Report Logs](/images/CallReportLog.png)
-- Player report and admin calling logs
+- 🇺🇸 Player report and admin calling logs
 
 ## 🎮 Advanced Menu System
 
@@ -292,7 +292,7 @@ The plugin features a powerful easy menu system powered by [MenuManagerCS2](http
 
 ## 🌍 Localization
 
-The plugin currently supports **English**, **Turkish**, **French**, **Russian**, and **German** languages with customizable messages through translation files.
+The plugin currently supports **English**, **Turkish**, **French**, **Russian**, **German**, and **Brazilian Portuguese** languages with customizable messages through translation files.
 
 ### 🌍 Multi-language Support
 
@@ -302,6 +302,7 @@ Current language support:
 - 🇫🇷 **French** - Full translation with modern color-coded messages (Thanks to felyjyn) ✅
 - 🇷🇺 **Russian** - Full translation with modern color-coded messages added in v1.0.3 ✅
 - 🇩🇪 **German** - Full translation with modern color-coded messages added in v1.0.3 ✅
+- 🇧🇷 **Brazilian Portuguese** - Full translation added in v1.0.4 ✅
 
 ### 🚀 More Languages Coming Soon!
 
@@ -311,7 +312,6 @@ We're working on adding support for additional languages:
 - 🇮🇷 Farsi (فارسی)
 - 🇱🇻 Latvian (Latviešu)
 - 🇵🇱 Polish (Polski)
-- 🇧🇷 Brazilian Portuguese (Português Brasileiro)
 - 🇵🇹 Portuguese (Português)
 - 🇨🇳 Chinese (Simplified) (中文简体)
 
@@ -361,7 +361,50 @@ Quick map access with aliases:
 
 ## 📋 Changelog
 
-### 🎉 Version 1.0.3 (Latest)
+### 🎉 Version 1.0.4 (Latest)
+- 🔐 **Admin Permission Reliability**:
+  - Added robust effective permission checks for menu/command access
+  - Improved `css_addadmin` handling for flag/group normalization
+  - Added `css_adminreload` command for manual admin data refresh
+- 🚫 **Ban Enforcement Hardening**:
+  - Added repeated post-connect ban rechecks to block reconnect bypass attempts
+  - Added extra early/late recheck stages for high-population server timing windows
+  - Added smart ban cache refresh based on file change timestamps
+  - Added clearer blocked-ban connect/console notifications
+- 🔇 **Mute/Gag Persistence Hardening**:
+  - Added file change detection for `communication_data.json` to reload manual edits safely
+  - Re-applies punishments on connect/team/chat enforcement paths to avoid reconnect bypass
+- ⚙️ **Auto File Bootstrap**:
+  - Plugin now auto-creates required data/config files on load when missing
+  - Improved resilience for empty/first-run JSON files
+- 🔗 **Discord Improvements**:
+  - Server address now uses dynamic `ip:hostport` detection (no fixed `27015`)
+  - Online admin count now uses effective admin permission checks
+- 🎮 **Fun Command Behavior Fixes**:
+  - `css_freeze`: movement lock behavior refined
+  - `css_drug`: camera lock/forced look behavior improved
+- 🌍 **Localization Redesign**:
+  - Unified prefix usage to a single `Prefix` key
+  - Reworked user-facing messages to modern, clearer, game-friendly wording
+  - Improved plural wording (`<multiple>` keys) and readability consistency
+  - Added and synchronized missing translation keys across all supported languages
+  - Added **Brazilian Portuguese** (`pt-BR`) language file
+- 🧩 **Compatibility Update**:
+  - Updated CounterStrikeSharp API package to `1.0.364`
+- 🛠️ **General Stability & Performance**:
+  - Added periodic cleanup improvements for report cooldown tracking dictionaries
+  - Included multiple compatibility and reliability fixes from community feedback
+
+#### 🔒 Ban & Communication Security Flow (No Database)
+- **Ban check stages**: authorization -> connect-full -> spawn -> scheduled rechecks (`0.10`, `0.30`, `0.50`, `1.0`, `1.5`, `3.0`, `6.0`, `10.0` seconds)
+- **Manual file edits supported**:
+  - Ban files (`banned_user.cfg`, `banned_ip.cfg`) are reloaded only when file `LastWriteTime` changes
+  - Communication punishments (`communication_data.json`) are also reloaded on change detection
+- **Why this is safer**:
+  - closes timing/race windows where identity/IP arrives slightly later during connection
+  - avoids expensive blind reloads each tick while still reacting quickly to manual edits
+
+### 🎉 Version 1.0.3
 - 📊 **NEW: Report System**: Player-to-player reporting with `/report` and `/calladmin` commands
 - 🔗 **Advanced Discord Integration**: **7 diferent webhook types** for comprehensive logging:
   - 🔨 **Ban Logs**: Real-time ban/unban notifications
@@ -387,7 +430,7 @@ Quick map access with aliases:
 
 ## 🗺️ Roadmap
 
-### 🚀 Upcoming Features (v1.0.4+)
+### 🚀 Upcoming Features (v1.0.5+)
 - 🌍 **Expanded Multi-language Support**: Complete translation system with 12+ languages
 - 🔧 **Code Improvements & Bug Fixes**: Performance optimizations, security patches, bug fixes, and stability enhancements
 
@@ -397,7 +440,7 @@ Quick map access with aliases:
 If you encounter any issues or bugs:
 1. Check the [GitHub Issues](https://github.com/debr1sj/CS2-AdminPlus/issues) first
 2. Create a new issue with:
-   - **Plugin version**: AdminPlus v1.0.3
+   - **Plugin version**: AdminPlus v1.0.4
    - **CounterStrikeSharp version**: Your CSS version
    - **Error logs**: Any console errors
    - **Steps to reproduce**: How to trigger the bug
@@ -413,7 +456,7 @@ If you encounter any issues or bugs:
 ### 🔧 **Common Issues**
 - **Plugin not loading**: Check CounterStrikeSharp installation
 - **Commands not working**: Verify admin permissions in `admins.json`
-- **Language files**: Ensure `lang/en.json`, `tr.json`, `fr.json`, `de.json`, `ru.json` are in correct directory
+- **Language files**: Ensure `lang/en.json`, `tr.json`, `fr.json`, `de.json`, `ru.json`, `pt-BR.json` are in correct directory
 
 ---
 

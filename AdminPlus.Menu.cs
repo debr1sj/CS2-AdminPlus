@@ -59,13 +59,13 @@ public partial class AdminPlus
             return;
         }
         
-        if (caller == null || !caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic"))
+        if (caller == null || !caller.IsValid || !HasEffectivePermission(caller, "@css/generic"))
         {
             caller?.Print(Localizer["NoPermission"]);
             return;
         }
 
-        if (!AdminManager.PlayerHasPermissions(caller, "@css/ban"))
+        if (!HasEffectivePermission(caller, "@css/ban"))
         {
             caller.Print(Localizer["NoPermission"]);
             return;
@@ -74,7 +74,7 @@ public partial class AdminPlus
         var menu = CreateMenu(Localizer["Menu.Title"]);
         List<ChatMenuOptionData> options = [];
 
-        if (AdminManager.PlayerHasPermissions(caller, "@css/root"))
+        if (HasEffectivePermission(caller, "@css/root"))
             options.Add(new ChatMenuOptionData(Localizer["Menu.Option.AdminManage"], () => ShowAdminManageMenu(caller)));
 
         options.Add(new ChatMenuOptionData(Localizer["Menu.ServerCommands"], () => ShowServerCommands(caller)));
@@ -96,7 +96,7 @@ public partial class AdminPlus
 
     private void ShowFunRootMenu(CCSPlayerController admin)
     {
-        if (!AdminManager.PlayerHasPermissions(admin, "@css/slay"))
+        if (!HasEffectivePermission(admin, "@css/slay"))
         {
             admin.Print(Localizer["NoPermission"]);
             return;
@@ -532,7 +532,7 @@ public partial class AdminPlus
 
     private void ShowAdminManageMenu(CCSPlayerController admin)
     {
-        if (!AdminManager.PlayerHasPermissions(admin, "@css/root"))
+        if (!HasEffectivePermission(admin, "@css/root"))
         {
             admin.Print(Localizer["NoPermission"]);
             return;
@@ -551,7 +551,7 @@ public partial class AdminPlus
 
     private void ShowAddAdminPlayerMenu(CCSPlayerController admin)
     {
-        if (!AdminManager.PlayerHasPermissions(admin, "@css/root"))
+        if (!HasEffectivePermission(admin, "@css/root"))
         {
             admin.Print(Localizer["NoPermission"]);
             return;
@@ -578,7 +578,7 @@ public partial class AdminPlus
 
     private void ShowAddAdminGroupMenu(CCSPlayerController admin, string steamId, string playerName)
     {
-        if (!AdminManager.PlayerHasPermissions(admin, "@css/root"))
+        if (!HasEffectivePermission(admin, "@css/root"))
         {
             admin.Print(Localizer["NoPermission"]);
             return;
@@ -602,7 +602,7 @@ public partial class AdminPlus
 
     private void ShowAddAdminImmunityMenu(CCSPlayerController admin, string steamId, string playerName, string group)
     {
-        if (!AdminManager.PlayerHasPermissions(admin, "@css/root"))
+        if (!HasEffectivePermission(admin, "@css/root"))
         {
             admin.Print(Localizer["NoPermission"]);
             return;
@@ -633,7 +633,7 @@ public partial class AdminPlus
 
     private void ShowAddAdminConfirmMenu(CCSPlayerController admin, string steamId, string playerName, string group, int immunity)
     {
-        if (!AdminManager.PlayerHasPermissions(admin, "@css/root"))
+        if (!HasEffectivePermission(admin, "@css/root"))
         {
             admin.Print(Localizer["NoPermission"]);
             return;
@@ -645,7 +645,7 @@ public partial class AdminPlus
         string info = $"{playerName} [{steamId}]<br/>Grup: {group}<br/>Immunity: {immunity}";
         menu.AddMenuOption(Localizer["Menu.ConfirmYes"] + " → " + info, (ply, opt) =>
         {
-            if (!AdminManager.PlayerHasPermissions(admin, "@css/root"))
+            if (!HasEffectivePermission(admin, "@css/root"))
             {
                 admin.Print(Localizer["NoPermission"]);
                 return;
@@ -688,7 +688,7 @@ public partial class AdminPlus
 
     private void OpenRemoveAdminMenu(CCSPlayerController admin)
     {
-        if (!AdminManager.PlayerHasPermissions(admin, "@css/root"))
+        if (!HasEffectivePermission(admin, "@css/root"))
         {
             admin.Print(Localizer["NoPermission"]);
             return;
@@ -728,7 +728,7 @@ public partial class AdminPlus
 
     private void ShowRemoveAdminConfirmMenu(CCSPlayerController admin, string steamId, string name, int immunity)
     {
-        if (!AdminManager.PlayerHasPermissions(admin, "@css/root"))
+        if (!HasEffectivePermission(admin, "@css/root"))
         {
             admin.Print(Localizer["NoPermission"]);
             return;
@@ -740,7 +740,7 @@ public partial class AdminPlus
         string info = $"{name} [{steamId}] (Imm:{immunity})";
         menu.AddMenuOption(Localizer["Menu.ConfirmYes"] + " → " + info, (ply, opt) =>
         {
-            if (!AdminManager.PlayerHasPermissions(admin, "@css/root"))
+            if (!HasEffectivePermission(admin, "@css/root"))
             {
                 admin.Print(Localizer["NoPermission"]);
                 return;
@@ -763,7 +763,7 @@ public partial class AdminPlus
 
     private void ShowAdminListMenu(CCSPlayerController admin)
     {
-        if (!AdminManager.PlayerHasPermissions(admin, "@css/root"))
+        if (!HasEffectivePermission(admin, "@css/root"))
         {
             admin.Print(Localizer["NoPermission"]);
             return;
@@ -798,7 +798,7 @@ public partial class AdminPlus
 
     private void ShowPlayerCommands(CCSPlayerController admin)
     {
-        if (!AdminManager.PlayerHasPermissions(admin, "@css/ban"))
+        if (!HasEffectivePermission(admin, "@css/ban"))
         {
             admin.Print(Localizer["NoPermission"]);
             return;
@@ -834,7 +834,7 @@ public partial class AdminPlus
 
     private void ShowSlapMenu(CCSPlayerController admin)
     {
-        if (!AdminManager.PlayerHasPermissions(admin, "@css/slay"))
+        if (!HasEffectivePermission(admin, "@css/slay"))
         { admin.Print(Localizer["NoPermission"]); return; }
 
         ShowTargetMenu(admin, Localizer["Menu.ChoosePlayer"], target =>
@@ -850,7 +850,7 @@ public partial class AdminPlus
 
     private void ShowSlayMenu(CCSPlayerController admin)
     {
-        if (!AdminManager.PlayerHasPermissions(admin, "@css/slay"))
+        if (!HasEffectivePermission(admin, "@css/slay"))
         { admin.Print(Localizer["NoPermission"]); return; }
 
         ShowTargetMenu(admin, Localizer["Menu.ChoosePlayer"], target =>
@@ -862,7 +862,7 @@ public partial class AdminPlus
 
     private void ShowRespawnMenu(CCSPlayerController admin)
     {
-        if (!AdminManager.PlayerHasPermissions(admin, "@css/slay"))
+        if (!HasEffectivePermission(admin, "@css/slay"))
         { admin.Print(Localizer["NoPermission"]); return; }
 
         ShowTargetMenu(admin, Localizer["Menu.Fun.Prompt.SelectTarget"], target =>
@@ -874,7 +874,7 @@ public partial class AdminPlus
 
     private void ShowKickPlayerMenu(CCSPlayerController admin)
     {
-        if (!AdminManager.PlayerHasPermissions(admin, "@css/generic"))
+        if (!HasEffectivePermission(admin, "@css/generic"))
         {
             admin.Print(Localizer["NoPermission"]);
             return;
@@ -889,7 +889,7 @@ public partial class AdminPlus
 
             menu.AddMenuOption(SanitizeName(p.PlayerName), (ply, opt) =>
             {
-                if (AdminManager.PlayerHasPermissions(admin, "@css/generic"))
+                if (HasEffectivePermission(admin, "@css/generic"))
                 {
                     p.Disconnect(NetworkDisconnectionReason.NETWORK_DISCONNECT_KICKED);
                     string reason = Localizer["Ban.NoReason"];
@@ -921,7 +921,7 @@ public partial class AdminPlus
 
             menu.AddMenuOption(SanitizeName(p.PlayerName), (ply, opt) =>
             {
-                if (AdminManager.PlayerHasPermissions(admin, "@css/chat"))
+                if (HasEffectivePermission(admin, "@css/chat"))
                 {
                     ShowCommDurationMenu(admin, p, "MUTE");
                 }
@@ -950,7 +950,7 @@ public partial class AdminPlus
 
             menu.AddMenuOption(SanitizeName(p.PlayerName), (ply, opt) =>
             {
-                if (AdminManager.PlayerHasPermissions(admin, "@css/chat"))
+                if (HasEffectivePermission(admin, "@css/chat"))
                 {
                     ShowCommDurationMenu(admin, p, "GAG");
                 }
@@ -979,7 +979,7 @@ public partial class AdminPlus
 
             menu.AddMenuOption(SanitizeName(p.PlayerName), (ply, opt) =>
             {
-                if (AdminManager.PlayerHasPermissions(admin, "@css/chat"))
+                if (HasEffectivePermission(admin, "@css/chat"))
                 {
                     ShowCommDurationMenu(admin, p, "SILENCE");
                 }
@@ -999,7 +999,7 @@ public partial class AdminPlus
 
     private void ShowCommDurationMenu(CCSPlayerController admin, CCSPlayerController target, string type)
     {
-        if (!AdminManager.PlayerHasPermissions(admin, "@css/chat"))
+        if (!HasEffectivePermission(admin, "@css/chat"))
         {
             admin.Print(Localizer["NoPermission"]);
             return;
@@ -1059,7 +1059,7 @@ public partial class AdminPlus
 
     private void ShowServerCommands(CCSPlayerController admin)
     {
-        if (!AdminManager.PlayerHasPermissions(admin, "@css/generic"))
+        if (!HasEffectivePermission(admin, "@css/generic"))
         {
             admin.Print(Localizer["NoPermission"]);
             return;
@@ -1072,7 +1072,7 @@ public partial class AdminPlus
         options.Add(new ChatMenuOptionData(Localizer["Menu.Fun.Cat.Cleanup"], () => ShowFunCleanupMenu(admin)));
         options.Add(new ChatMenuOptionData(Localizer["Menu.Option.RoundRestart"], () =>
         {
-            if (AdminManager.PlayerHasPermissions(admin, "@css/generic"))
+            if (HasEffectivePermission(admin, "@css/generic"))
             {
                 Server.ExecuteCommand("mp_restartgame 1");
                 PlayerExtensions.PrintToAll(Localizer["Round.Restarted", admin.PlayerName]);
@@ -1095,7 +1095,7 @@ public partial class AdminPlus
 
     private void ShowMapSelectionMenu(CCSPlayerController admin)
     {
-        if (!AdminManager.PlayerHasPermissions(admin, "@css/generic"))
+        if (!HasEffectivePermission(admin, "@css/generic"))
         {
             admin.Print(Localizer["NoPermission"]);
             return;
@@ -1113,7 +1113,7 @@ public partial class AdminPlus
 
     private void ShowConfirmChangeMapMenu(CCSPlayerController admin, string map)
     {
-        if (!AdminManager.PlayerHasPermissions(admin, "@css/generic"))
+        if (!HasEffectivePermission(admin, "@css/generic"))
         {
             admin.Print(Localizer["NoPermission"]);
             return;
@@ -1124,7 +1124,7 @@ public partial class AdminPlus
 
         menu.AddMenuOption(Localizer["Menu.ConfirmYes"], (ply, opt) =>
         {
-            if (AdminManager.PlayerHasPermissions(admin, "@css/generic"))
+            if (HasEffectivePermission(admin, "@css/generic"))
             {
                 var currentMap = Server.MapName;
                 if (currentMap == map)
@@ -1157,7 +1157,7 @@ public partial class AdminPlus
 
     private void ShowPlayerList(CCSPlayerController admin)
     {
-        if (!AdminManager.PlayerHasPermissions(admin, "@css/ban"))
+        if (!HasEffectivePermission(admin, "@css/ban"))
         {
             admin.Print(Localizer["NoPermission"]);
             return;
@@ -1181,7 +1181,7 @@ public partial class AdminPlus
 
     private void ShowBanTypeMenu(CCSPlayerController admin, CCSPlayerController target)
     {
-        if (!AdminManager.PlayerHasPermissions(admin, "@css/ban"))
+        if (!HasEffectivePermission(admin, "@css/ban"))
         {
             admin.Print(Localizer["NoPermission"]);
             return;
@@ -1198,7 +1198,7 @@ public partial class AdminPlus
 
     private void ShowDurationMenu(CCSPlayerController admin, CCSPlayerController target)
     {
-        if (!AdminManager.PlayerHasPermissions(admin, "@css/ban"))
+        if (!HasEffectivePermission(admin, "@css/ban"))
         {
             admin.Print(Localizer["NoPermission"]);
             return;
@@ -1224,7 +1224,7 @@ public partial class AdminPlus
 
     private void ShowReasonMenu(CCSPlayerController admin, CCSPlayerController target, int minutes, bool isIpBan)
     {
-        if (!AdminManager.PlayerHasPermissions(admin, "@css/ban"))
+        if (!HasEffectivePermission(admin, "@css/ban"))
         {
             admin.Print(Localizer["NoPermission"]);
             return;
@@ -1243,7 +1243,7 @@ public partial class AdminPlus
         {
             menu.AddMenuOption(reason, (ply, opt) =>
             {
-                if (!AdminManager.PlayerHasPermissions(admin, "@css/ban"))
+                if (!HasEffectivePermission(admin, "@css/ban"))
                 {
                     admin.Print(Localizer["NoPermission"]);
                     return;
@@ -1304,7 +1304,7 @@ public partial class AdminPlus
             return;
         }
         
-        if (caller == null || !caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/ban"))
+        if (caller == null || !caller.IsValid || !HasEffectivePermission(caller, "@css/ban"))
         {
             caller?.Print(Localizer["NoPermission"]);
             return;
@@ -1367,7 +1367,7 @@ public partial class AdminPlus
 
     private void ShowMoneyMenu(CCSPlayerController admin)
     {
-        if (!AdminManager.PlayerHasPermissions(admin, "@css/slay"))
+        if (!HasEffectivePermission(admin, "@css/slay"))
         {
             admin.Print(Localizer["NoPermission"]);
             return;
@@ -1386,7 +1386,7 @@ public partial class AdminPlus
 
     private void ShowArmorMenu(CCSPlayerController admin)
     {
-        if (!AdminManager.PlayerHasPermissions(admin, "@css/slay"))
+        if (!HasEffectivePermission(admin, "@css/slay"))
         {
             admin.Print(Localizer["NoPermission"]);
             return;

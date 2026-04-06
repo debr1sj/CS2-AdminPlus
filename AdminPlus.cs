@@ -21,6 +21,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Text.Json.Nodes;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using MenuManager;
@@ -32,7 +33,7 @@ namespace AdminPlus;
 public partial class AdminPlus : BasePlugin
 {
     public override string ModuleName => "AdminPlus";
-    public override string ModuleVersion => "1.0.2";
+    public override string ModuleVersion => "1.0.4";
     public override string ModuleAuthor => "debr1sj";
 
     internal static string BannedUserPath = string.Empty;
@@ -44,6 +45,9 @@ public partial class AdminPlus : BasePlugin
     private const int MAX_DISCONNECTED_PLAYERS = 50;
     
     private static readonly HashSet<ulong> _loggedPlayers = new();
+    private DateTime _lastBanCacheRefreshUtc = DateTime.MinValue;
+    private DateTime _lastUserBanWriteUtc = DateTime.MinValue;
+    private DateTime _lastIpBanWriteUtc = DateTime.MinValue;
     
 
     private Timer? cleanupTimer;
@@ -56,7 +60,7 @@ public partial class AdminPlus : BasePlugin
     
     public static string GetPrefix()
     {
-        return _instance?.Localizer?["ap_prefix"] ?? "";
+        return _instance?.Localizer?["Prefix"] ?? "";
     }
     
     public static void LogAction(string action)
@@ -106,6 +110,9 @@ public partial class AdminPlus : BasePlugin
         base.Load(hotReload);
         _instance = this;
 
+        EnsureAdminConfigFiles();
+        EnsurePluginDataFiles();
+
             BannedUserPath = Path.Combine(Server.GameDirectory, "csgo/cfg/banned_user.cfg");
             BannedIpPath = Path.Combine(Server.GameDirectory, "csgo/cfg/banned_ip.cfg");
 
@@ -133,6 +140,25 @@ public partial class AdminPlus : BasePlugin
         RegisterReportCommands();
 
         InitializeReservationSystem();
+    }
+
+    private void EnsurePluginDataFiles()
+    {
+        try
+        {
+            Directory.CreateDirectory(ModuleDirectory);
+
+            var communicationDataPath = Path.Combine(ModuleDirectory, "communication_data.json");
+            if (!File.Exists(communicationDataPath))
+            {
+                File.WriteAllText(communicationDataPath, "[]" + Environment.NewLine);
+                Console.WriteLine($"[AdminPlus] Created missing communication data file: {communicationDataPath}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[AdminPlus] ERROR: Failed to bootstrap plugin data files: {ex.Message}");
+        }
     }
 
     public override void OnAllPluginsLoaded(bool hotReload)
@@ -163,7 +189,11 @@ public partial class AdminPlus : BasePlugin
         AddCommand("admins", Localizer["Admins.Usage"], CmdAdmins);
         AddCommand("css_admins", "List online admins in console", CmdAdmins);
         
-        RegisterListener<Listeners.OnClientAuthorized>((slot, id) => EnforceBan(slot));
+        RegisterListener<Listeners.OnClientAuthorized>((slot, id) =>
+        {
+            EnforceBan(slot);
+            ScheduleBanRechecks(slot);
+        });
 
 
         RegisterListener<Listeners.OnClientDisconnect>((slot) =>
@@ -242,6 +272,9 @@ public partial class AdminPlus : BasePlugin
         {
             var player = @event.Userid; // CCSPlayerController?
             player?.RemoveLastCoord();
+
+            if (player != null && player.IsValid)
+                EnforceBan(player.Slot);
             
             if (player != null && player.IsValid && !player.IsBot)
             {
@@ -253,6 +286,17 @@ public partial class AdminPlus : BasePlugin
                 }
             }
             
+            return HookResult.Continue;
+        });
+
+        RegisterEventHandler<EventPlayerConnectFull>((@event, info) =>
+        {
+            var player = @event.Userid;
+            if (player != null && player.IsValid)
+            {
+                EnforceBan(player.Slot);
+                ScheduleBanRechecks(player.Slot);
+            }
             return HookResult.Continue;
         });
 
@@ -323,6 +367,8 @@ public partial class AdminPlus : BasePlugin
 
     private void EnforceBan(int playerSlot)
     {
+        TryRefreshBanCacheIfChanged();
+
         var player = Utilities.GetPlayerFromSlot(playerSlot);
         if (player == null || !player.IsValid || player.IsBot) return;
 
@@ -342,16 +388,67 @@ public partial class AdminPlus : BasePlugin
             if (IpBans.TryGetValue(ipWithoutPort, out var ipBan) && (ipBan.expiry == 0 || now < ipBan.expiry))
             {
                 player.Disconnect(NetworkDisconnectionReason.NETWORK_DISCONNECT_STEAM_BANNED);
-                Console.WriteLine($"[AdminPlus] Blocked banned IP: {ipWithoutPort} (Player: {player.PlayerName})");
+                NotifyBlockedBan(player, "IP", ipWithoutPort);
                 return;
             }
 
             if (SteamBans.TryGetValue(steamId, out var steamBan) && (steamBan.expiry == 0 || now < steamBan.expiry))
             {
                 player.Disconnect(NetworkDisconnectionReason.NETWORK_DISCONNECT_STEAM_BANNED);
-                Console.WriteLine($"[AdminPlus] Blocked banned SteamID: {steamId} (Player: {player.PlayerName})");
+                NotifyBlockedBan(player, "SteamID", steamId);
             }
         }
+    }
+
+    private void TryRefreshBanCacheIfChanged()
+    {
+        try
+        {
+            var now = DateTime.UtcNow;
+            // Throttle reload attempts; we still parse file changes quickly.
+            if ((now - _lastBanCacheRefreshUtc).TotalMilliseconds < 800)
+                return;
+
+            _lastBanCacheRefreshUtc = now;
+
+            var userWrite = File.Exists(BannedUserPath) ? File.GetLastWriteTimeUtc(BannedUserPath) : DateTime.MinValue;
+            var ipWrite = File.Exists(BannedIpPath) ? File.GetLastWriteTimeUtc(BannedIpPath) : DateTime.MinValue;
+
+            if (userWrite != _lastUserBanWriteUtc || ipWrite != _lastIpBanWriteUtc)
+            {
+                LoadBans();
+                _lastUserBanWriteUtc = userWrite;
+                _lastIpBanWriteUtc = ipWrite;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[AdminPlus] Ban cache refresh check failed: {ex.Message}");
+        }
+    }
+
+    private void NotifyBlockedBan(CCSPlayerController player, string banType, string banKey)
+    {
+        var safeName = SanitizeName(player.PlayerName);
+        var steamId = player.SteamID.ToString();
+        var ip = player.IpAddress ?? "-";
+
+        PlayerExtensions.PrintToAll(Localizer["Ban.Blocked.Connect", safeName, steamId, banType]);
+        Console.WriteLine(Localizer["Ban.Blocked.Console", safeName, steamId, ip, banType, banKey]);
+    }
+
+    private void ScheduleBanRechecks(int playerSlot)
+    {
+        // Defense-in-depth: recheck in first seconds after authorization
+        // to avoid rare timing/race windows during connection flow.
+        AddTimer(0.10f, () => EnforceBan(playerSlot));
+        AddTimer(0.30f, () => EnforceBan(playerSlot));
+        AddTimer(0.5f, () => EnforceBan(playerSlot));
+        AddTimer(1.0f, () => EnforceBan(playerSlot));
+        AddTimer(1.5f, () => EnforceBan(playerSlot));
+        AddTimer(3.0f, () => EnforceBan(playerSlot));
+        AddTimer(6.0f, () => EnforceBan(playerSlot));
+        AddTimer(10.0f, () => EnforceBan(playerSlot));
     }
 
     internal void LoadBans()
@@ -456,7 +553,7 @@ public partial class AdminPlus : BasePlugin
 
         try
         {
-            var match = Regex.Match(line, @"^banid\s+""([^""]+)""\s+""([^""]+)""\s+ip:([^\s]+)\s+expiry:(\d+)");
+            var match = Regex.Match(line, @"^\s*banid\s+""([^""]+)""\s+""([^""]+)""\s+ip:([^\s]+)\s+expiry:(\d+)");
             if (match.Success)
             {
                 key = match.Groups[1].Value;
@@ -479,7 +576,7 @@ public partial class AdminPlus : BasePlugin
 
         try
         {
-            var match = Regex.Match(line, @"^addip\s+\""(.*?)\""\s+expiry:(\d+)(?:\s*//\s*(.+))?");
+            var match = Regex.Match(line, @"^\s*addip\s+\""(.*?)\""\s+expiry:(\d+)(?:\s*//\s*(.+))?");
             if (match.Success)
             {
                 key = match.Groups[1].Value;
@@ -499,32 +596,25 @@ public partial class AdminPlus : BasePlugin
     {
         try
         {
-            JsonObject root;
-            bool ok = false;
-            try { ok = ReadAdminsFile(out root); }
-            catch { root = new JsonObject(); }
-
             var players = Utilities.GetPlayers()
                 .Where(p => p != null && p.IsValid && !p.IsBot)
                 .ToList();
 
             var onlineAdmins = new List<(string name, int imm)>();
 
-            if (ok && root.Count > 0)
+            foreach (var p in players)
             {
-                foreach (var p in players)
-                {
-                    var key = p.SteamID.ToString();
-                    if (root.ContainsKey(key) && root[key] is JsonObject obj)
-                    {
-                        int imm = obj["immunity"]?.GetValue<int?>() ?? 0;
-                        if (imm > 0)
-                        {
-                            string name = SanitizeName(p.PlayerName);
-                            onlineAdmins.Add((name, imm));
-                        }
-                    }
-                }
+                bool hasAdminPerm =
+                    HasEffectivePermission(p, "@css/root") ||
+                    HasEffectivePermission(p, "@css/ban") ||
+                    HasEffectivePermission(p, "@css/generic");
+
+                if (!hasAdminPerm)
+                    continue;
+
+                adminImmunity.TryGetValue(p.SteamID, out var imm);
+                string name = SanitizeName(p.PlayerName);
+                onlineAdmins.Add((name, imm));
             }
 
             if (caller != null && caller.IsValid)
@@ -561,6 +651,110 @@ public partial class AdminPlus : BasePlugin
         }
     }
 
+    internal bool HasEffectivePermission(CCSPlayerController? player, string permission)
+    {
+        if (player == null || !player.IsValid)
+            return false;
+
+        if (AdminManager.PlayerHasPermissions(player, permission) || AdminManager.PlayerHasPermissions(player, "@css/root"))
+            return true;
+
+        try
+        {
+            if (!ReadAdminsFile(out var adminsRoot))
+                return false;
+
+            var steamKey = player.SteamID.ToString();
+            if (!adminsRoot.TryGetPropertyValue(steamKey, out var adminNode) || adminNode is not JsonObject adminObj)
+                return false;
+
+            if (HasPermissionInFlagsArray(adminObj["flags"] as JsonArray, permission))
+                return true;
+
+            if (adminObj["groups"] is not JsonArray groups || groups.Count == 0)
+                return false;
+
+            var groupsFile = Path.Combine(Server.GameDirectory, "csgo", "addons", "counterstrikesharp", "configs", "admin_groups.json");
+            if (!File.Exists(groupsFile))
+                return false;
+
+            var groupsText = File.ReadAllText(groupsFile);
+            if (string.IsNullOrWhiteSpace(groupsText))
+                return false;
+
+            var groupRoot = JsonNode.Parse(groupsText) as JsonObject;
+            if (groupRoot == null)
+                return false;
+
+            foreach (var groupNode in groups)
+            {
+                var groupName = groupNode?.GetValue<string>();
+                if (string.IsNullOrWhiteSpace(groupName))
+                    continue;
+
+                if (!groupRoot.TryGetPropertyValue(groupName, out var gNode) || gNode is not JsonObject groupObj)
+                    continue;
+
+                if (HasPermissionInFlagsArray(groupObj["flags"] as JsonArray, permission))
+                    return true;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[AdminPlus] Effective permission fallback error: {ex.Message}");
+        }
+
+        return false;
+    }
+
+    internal static string GetServerAddress()
+    {
+        string ip = "0.0.0.0";
+        string port = "27015";
+
+        try
+        {
+            var ipConVar = ConVar.Find("ip");
+            if (ipConVar != null && !string.IsNullOrWhiteSpace(ipConVar.StringValue))
+            {
+                ip = ipConVar.StringValue;
+            }
+        }
+        catch { }
+
+        try
+        {
+            var hostPortConVar = ConVar.Find("hostport");
+            if (hostPortConVar != null)
+            {
+                var portValue = hostPortConVar.GetPrimitiveValue<int>();
+                if (portValue > 0)
+                    port = portValue.ToString();
+            }
+        }
+        catch { }
+
+        return $"{ip}:{port}";
+    }
+
+    private static bool HasPermissionInFlagsArray(JsonArray? flags, string permission)
+    {
+        if (flags == null) return false;
+
+        foreach (var flagNode in flags)
+        {
+            var flag = flagNode?.GetValue<string>();
+            if (string.IsNullOrWhiteSpace(flag))
+                continue;
+
+            if (string.Equals(flag, permission, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(flag, "@css/root", StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
+    }
+
     private void StartCleanup()
     {
         cleanupTimer = AddTimer(60f, () =>
@@ -588,6 +782,16 @@ public partial class AdminPlus : BasePlugin
                     }
                 }
             }
+
+            // Avoid unbounded growth in report cooldown dictionaries.
+            var reportCutoff = DateTime.Now.AddMinutes(-10);
+            var oldGlobalCooldowns = _lastReportTime.Where(kv => kv.Value < reportCutoff).Select(kv => kv.Key).ToList();
+            foreach (var key in oldGlobalCooldowns)
+                _lastReportTime.Remove(key);
+
+            var oldPairCooldowns = _playerReportingCooldowns.Where(kv => kv.Value < reportCutoff).Select(kv => kv.Key).ToList();
+            foreach (var key in oldPairCooldowns)
+                _playerReportingCooldowns.Remove(key);
         }, TimerFlags.REPEAT);
     }
 
@@ -740,13 +944,13 @@ public partial class AdminPlus : BasePlugin
         
         if (!CheckReportCooldown(playerId))
         {
-            caller.PrintToChat($"{Localizer["ap_prefix"]} You must wait 2 minutes between reports.");
+            caller.PrintToChat($"{Localizer["Prefix"]} {Localizer["Report.GlobalCooldown"]}");
             return;
         }
 
         var players = Utilities.GetPlayers().Where(x => x.IsValid && !x.IsBot && x.Connected == PlayerConnectedState.PlayerConnected);
         
-        var reportMenu = CreateMenu("Select player to report:");
+        var reportMenu = CreateMenu(Localizer["Report.Menu.SelectPlayer"]);
         if (reportMenu == null) return;
         
         foreach (var player in players)
@@ -802,29 +1006,29 @@ public partial class AdminPlus : BasePlugin
     {
         if (targetPlayer == null)
         {
-            controller.PrintToChat($"{Localizer["ap_prefix"]} Player not found.");
+            controller.PrintToChat($"{Localizer["Prefix"]} {Localizer["Report.PlayerNotFound"]}");
             return;
         }
 
         if (!CheckPlayerToPlayerReportCooldown(controller, targetPlayer))
         {
-            controller.PrintToChat($"{Localizer["ap_prefix"]} {Localizer["Report.CooldownWarning"]}");
+            controller.PrintToChat($"{Localizer["Prefix"]} {Localizer["Report.CooldownWarning"]}");
             return;
         }
 
         var reasons = new[]
         {
-            "Hacking/Cheating",
-            "Toxic behavior",
-            "Griefing", 
-            "Spamming",
-            "Other"
+            Localizer["Report.Reason.Cheating"].Value,
+            Localizer["Report.Reason.Toxic"].Value,
+            Localizer["Report.Reason.Griefing"].Value,
+            Localizer["Report.Reason.Spam"].Value,
+            Localizer["Report.Reason.Other"].Value
         };
 
-        var reasonMenu = CreateMenu("Select report reason:");
+        var reasonMenu = CreateMenu(Localizer["Report.Menu.SelectReason"]);
         if (reasonMenu == null) return;
 
-        var customReasonData = new ChatMenuOptionData("Custom Reason", () => HandleCustomReasonSimple(controller, targetPlayer));
+        var customReasonData = new ChatMenuOptionData(Localizer["Report.Reason.Custom"], () => HandleCustomReasonSimple(controller, targetPlayer));
         reasonMenu.AddMenuOption(customReasonData.Name, (ctrl, opt) => { customReasonData.Action.Invoke(); }, customReasonData.Disabled);
         
         foreach (var reason in reasons)
@@ -843,7 +1047,7 @@ public partial class AdminPlus : BasePlugin
 
     private void HandleCustomReasonSimple(CCSPlayerController controller, CCSPlayerController targetPlayer)
     {
-        controller.PrintToChat($"{Localizer["ap_prefix"]} Please type your custom reason in chat. Type 'cancel' to cancel.");
+        controller.PrintToChat($"{Localizer["Prefix"]} {Localizer["Report.CustomReasonPrompt"]}");
         
         _selectedReportTarget = targetPlayer;
         
@@ -851,7 +1055,7 @@ public partial class AdminPlus : BasePlugin
         {
             if (_selectedReportTarget != null)
             {
-                controller.PrintToChat($"{Localizer["ap_prefix"]} Report timed out.");
+                controller.PrintToChat($"{Localizer["Prefix"]} {Localizer["Report.TimedOut"]}");
                 _selectedReportTarget = null;
             }
         });
@@ -865,7 +1069,7 @@ public partial class AdminPlus : BasePlugin
     {
         if (!CheckPlayerToPlayerReportCooldown(reporter, reported))
         {
-            reporter.PrintToChat($"{Localizer["ap_prefix"]} {Localizer["Report.CooldownWarning"]}");
+            reporter.PrintToChat($"{Localizer["Prefix"]} {Localizer["Report.CooldownWarning"]}");
             _selectedReportTarget = null;
             _activeReportMenu = null;
             return;
@@ -873,20 +1077,7 @@ public partial class AdminPlus : BasePlugin
 
         try
         {
-            var serverIp = "0.0.0.0:27015";
-            try
-            {
-                var ipConVar = ConVar.Find("ip");
-                if (ipConVar != null && !string.IsNullOrEmpty(ipConVar.StringValue))
-                {
-                    var ip = ipConVar.StringValue;
-                    if (ip != "0.0.0.0")
-                    {
-                        serverIp = $"{ip}:27015";
-                    }
-                }
-            }
-            catch { }
+            var serverIp = GetServerAddress();
 
             _ = Discord.SendPlayerReport(
                 reporter.PlayerName, 
@@ -904,11 +1095,11 @@ public partial class AdminPlus : BasePlugin
             _activeReportMenu = null;
             
             var message = Localizer["Report.SentSuccessfullyFor"].ToString().Replace("{player}", reported.PlayerName);
-            reporter.PrintToChat($"{Localizer["ap_prefix"]} {message}");
+            reporter.PrintToChat($"{Localizer["Prefix"]} {message}");
         }
         catch (Exception ex)
         {
-            reporter.PrintToChat($"{Localizer["ap_prefix"]} {Localizer["Report.FailedToSend"]}");
+            reporter.PrintToChat($"{Localizer["Prefix"]} {Localizer["Report.FailedToSend"]}");
             Console.WriteLine($"[AdminPlus] Report error: {ex.Message}");
         }
     }
@@ -920,14 +1111,14 @@ public partial class AdminPlus : BasePlugin
 
         if (!CheckPlayerToPlayerReportCooldown(player, _selectedReportTarget))
         {
-            player.PrintToChat($"{Localizer["ap_prefix"]} {Localizer["Report.CooldownWarning"]}");
+            player.PrintToChat($"{Localizer["Prefix"]} {Localizer["Report.CooldownWarning"]}");
             _selectedReportTarget = null;
             return true;
         }
 
         if (message.ToLower().Contains("cancel"))
         {
-            player.PrintToChat($"{Localizer["ap_prefix"]} Report cancelled.");
+            player.PrintToChat($"{Localizer["Prefix"]} {Localizer["Report.Cancelled"]}");
             _selectedReportTarget = null;
             return true;
         }
@@ -942,7 +1133,7 @@ public static class PlayerExtensions
 {
     public static void Print(this CCSPlayerController controller, string message = "")
     {
-        var prefix = AdminPlus._instance?.Localizer?["ap_prefix"] ?? "";
+        var prefix = AdminPlus._instance?.Localizer?["Prefix"] ?? "";
         if (!string.IsNullOrEmpty(prefix))
             controller.PrintToChat($"{prefix} {message}");
         else
@@ -953,7 +1144,7 @@ public static class PlayerExtensions
         {
             try
             {
-                var prefix = AdminPlus._instance?.Localizer?["ap_prefix"] ?? "";
+                var prefix = AdminPlus._instance?.Localizer?["Prefix"] ?? "";
                 string fullMessage = !string.IsNullOrEmpty(prefix) ? $"{prefix} {message}" : message;
                 
                 if (Server.MaxPlayers <= 0)

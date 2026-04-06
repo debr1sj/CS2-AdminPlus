@@ -331,7 +331,6 @@ public partial class AdminPlus
     private static void GlowPawn(CCSPlayerController target, Color color)
     {
         var pawn = target.PlayerPawn?.Value; if (pawn == null) return;
-        pawn.RenderMode = RenderMode_t.kRenderTransColor;
         pawn.Render = color;
         Utilities.SetStateChanged(pawn, "CBaseModelEntity", "m_clrRender");
     }
@@ -522,24 +521,25 @@ public partial class AdminPlus
 
             if (!_prevMoveType.ContainsKey(t.SteamID)) _prevMoveType[t.SteamID] = pawn.MoveType;
             if (pawn.AbsOrigin != null) _freezeAnchor[t.SteamID] = pawn.AbsOrigin;
-
-            try { pawn.MoveType = MoveType_t.MOVETYPE_OBSOLETE; } catch { }
-            SetActualMoveType(pawn, (int)MoveType_t.MOVETYPE_OBSOLETE);
+            try { pawn.MoveType = MoveType_t.MOVETYPE_NONE; } catch { }
+            SetActualMoveType(pawn, (int)MoveType_t.MOVETYPE_NONE);
             pawn.VelocityModifier = 0f; Utilities.SetStateChanged(pawn, "CCSPlayerPawn", "m_flVelocityModifier");
-            try { if (!_prevGravityScale.ContainsKey(t.SteamID)) _prevGravityScale[t.SteamID] = pawn.GravityScale; pawn.GravityScale = 0f; Utilities.SetStateChanged(pawn, "CBaseEntity", "m_flGravityScale"); } catch { }
+            Utilities.SetStateChanged(pawn, "CBaseEntity", "m_MoveType");
             if (_freezeAnchor.TryGetValue(t.SteamID, out var anchor))
                 pawn.Teleport(anchor, pawn.AbsRotation, new Vector(0, 0, 0));
-            Utilities.SetStateChanged(pawn, "CBaseEntity", "m_MoveType");
 
             try { t.ExecuteClientCommand("play sounds/tools/sfm/beep.vsnd_c"); } catch { }
 
             StopTimer(t, FunTimer.FreezeLoop);
-            RememberTimer(t, FunTimer.FreezeLoop, AddTimer(0.02f, () =>
+            RememberTimer(t, FunTimer.FreezeLoop, AddTimer(0.01f, () =>
             {
                 if (!t.IsValid) { StopTimer(t, FunTimer.FreezeLoop); return; }
                 var p = t.PlayerPawn?.Value; if (p == null) return;
-                try { p.MoveType = MoveType_t.MOVETYPE_OBSOLETE; } catch { }
-                SetActualMoveType(p, (int)MoveType_t.MOVETYPE_OBSOLETE);
+                try { p.MoveType = MoveType_t.MOVETYPE_NONE; } catch { }
+                SetActualMoveType(p, (int)MoveType_t.MOVETYPE_NONE);
+                p.VelocityModifier = 0f;
+                Utilities.SetStateChanged(p, "CCSPlayerPawn", "m_flVelocityModifier");
+                Utilities.SetStateChanged(p, "CBaseEntity", "m_MoveType");
                 if (_freezeAnchor.TryGetValue(t.SteamID, out var a)) p.Teleport(a, null, new Vector(0, 0, 0));
             }, TimerFlags.REPEAT));
 
@@ -551,13 +551,19 @@ public partial class AdminPlus
                     if (!t.IsValid) { StopTimer(t, FunTimer.FreezeLoop); StopTimer(t, FunTimer.Freeze); return; }
                     var p = t.PlayerPawn?.Value; if (p == null) return;
                     StopTimer(t, FunTimer.FreezeLoop);
-                    if (_prevMoveType.TryGetValue(t.SteamID, out var prev)) { p.MoveType = prev; SetActualMoveType(p, (int)prev); _prevMoveType.Remove(t.SteamID); }
-                    else { p.MoveType = MoveType_t.MOVETYPE_WALK; SetActualMoveType(p, (int)MoveType_t.MOVETYPE_WALK); }
+                    if (_prevMoveType.TryGetValue(t.SteamID, out var prev))
+                    {
+                        try { p.MoveType = prev; } catch { }
+                        SetActualMoveType(p, (int)prev);
+                        _prevMoveType.Remove(t.SteamID);
+                    }
+                    else
+                    {
+                        try { p.MoveType = MoveType_t.MOVETYPE_WALK; } catch { }
+                        SetActualMoveType(p, (int)MoveType_t.MOVETYPE_WALK);
+                    }
                     p.VelocityModifier = 1f; Utilities.SetStateChanged(p, "CCSPlayerPawn", "m_flVelocityModifier");
-                    AddTimer(0.05f, () => { if (p != null && p.IsValid) { try { p.MoveType = MoveType_t.MOVETYPE_WALK; } catch { } SetActualMoveType(p, 2); Utilities.SetStateChanged(p, "CBaseEntity", "m_MoveType"); } });
-                    AddTimer(0.10f, () => { if (p != null && p.IsValid) { p.VelocityModifier = 1f; Utilities.SetStateChanged(p, "CCSPlayerPawn", "m_flVelocityModifier"); } });
-                    try { if (p.AbsOrigin != null && p.AbsRotation != null) p.Teleport(p.AbsOrigin, p.AbsRotation, new Vector(0, 0, 0)); } catch { }
-                    try { if (_prevGravityScale.TryGetValue(t.SteamID, out var g)) { p.GravityScale = g; _prevGravityScale.Remove(t.SteamID); Utilities.SetStateChanged(p, "CBaseEntity", "m_flGravityScale"); } } catch { }
+                    Utilities.SetStateChanged(p, "CBaseEntity", "m_MoveType");
                     try { t.ExecuteClientCommand("play sounds/tools/sfm/beep.vsnd_c"); } catch { }
                 }));
             }
@@ -586,12 +592,19 @@ public partial class AdminPlus
             var pawn = t.PlayerPawn?.Value; if (pawn == null) continue;
             StopTimer(t, FunTimer.FreezeLoop);
             StopTimer(t, FunTimer.Freeze);
-            if (_prevMoveType.TryGetValue(t.SteamID, out var prev)) { pawn.MoveType = prev; SetActualMoveType(pawn, prev == MoveType_t.MOVETYPE_NOCLIP ? 8 : 2); _prevMoveType.Remove(t.SteamID); }
-            else { try { pawn.MoveType = MoveType_t.MOVETYPE_WALK; } catch { } SetActualMoveType(pawn, 2); }
+            if (_prevMoveType.TryGetValue(t.SteamID, out var prev))
+            {
+                try { pawn.MoveType = prev; } catch { }
+                SetActualMoveType(pawn, (int)prev);
+                _prevMoveType.Remove(t.SteamID);
+            }
+            else
+            {
+                try { pawn.MoveType = MoveType_t.MOVETYPE_WALK; } catch { }
+                SetActualMoveType(pawn, (int)MoveType_t.MOVETYPE_WALK);
+            }
             pawn.VelocityModifier = 1f; Utilities.SetStateChanged(pawn, "CCSPlayerPawn", "m_flVelocityModifier");
-            AddTimer(0.05f, () => { if (pawn != null && pawn.IsValid) { try { pawn.MoveType = MoveType_t.MOVETYPE_WALK; } catch { } SetActualMoveType(pawn, 2); Utilities.SetStateChanged(pawn, "CBaseEntity", "m_MoveType"); } });
-            AddTimer(0.10f, () => { if (pawn != null && pawn.IsValid) { pawn.VelocityModifier = 1f; Utilities.SetStateChanged(pawn, "CCSPlayerPawn", "m_flVelocityModifier"); } });
-            try { if (pawn.AbsOrigin != null && pawn.AbsRotation != null) pawn.Teleport(pawn.AbsOrigin, pawn.AbsRotation, new Vector(0, 0, 0)); } catch { }
+            Utilities.SetStateChanged(pawn, "CBaseEntity", "m_MoveType");
             _freezeAnchor.Remove(t.SteamID);
         }
         Announce("css_unfreeze<player>", "css_unfreeze<multiple>", admin, label);
@@ -1279,18 +1292,16 @@ public partial class AdminPlus
             RememberTimer(t, FunTimer.Drug, AddTimer(0.033f, () =>
             {
                 time += 0.033f;
-                var pawn = t.PlayerPawn?.Value; if (pawn?.AbsRotation == null) return;
-                var a = pawn.AbsRotation;
-                float roll = (float)(Math.Sin(time * 2.0f) * 20.0f);
-                a.Z = roll;
-                pawn.Teleport(null, a, null);
-                ColorScreen(t, Color.FromArgb(rnd.Next(256), rnd.Next(256), rnd.Next(256), 100), 0.12f, 0.04f, stayout: true, purge: false);
+                // Keep mouse fully free: no camera-angle forcing.
+                if (((int)(time * 10)) % 2 == 0)
+                {
+                    ColorScreen(t, Color.FromArgb(rnd.Next(256), rnd.Next(256), rnd.Next(256), 90), 0.18f, 0.10f, stayout: true, purge: false);
+                }
             }, TimerFlags.REPEAT));
 
             RememberTimer(t, FunTimer.DrugEnd, AddTimer(sec, () =>
             {
                 StopTimer(t, FunTimer.Drug);
-                var pawn = t.PlayerPawn?.Value; if (pawn?.AbsRotation != null) { var a = pawn.AbsRotation; a.Z = 0f; pawn.Teleport(null, a, null); }
                 ColorScreen(t, Color.FromArgb(0, 0, 0, 0), 0, 0.10f, stayout: false, purge: true);
                 StopTimer(t, FunTimer.DrugEnd);
             }));
@@ -1317,11 +1328,6 @@ public partial class AdminPlus
         {
             StopTimer(t, FunTimer.Drug);
             StopTimer(t, FunTimer.DrugEnd);
-            var pawn = t.PlayerPawn?.Value;
-            if (pawn?.AbsRotation != null)
-            {
-                var a = pawn.AbsRotation; a.Z = 0f; pawn.Teleport(null, a, null);
-            }
             ColorScreen(t, Color.FromArgb(0, 0, 0, 0), 0, 0.1f, stayout: false, purge: true);
         }
         

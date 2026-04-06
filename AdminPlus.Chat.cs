@@ -166,7 +166,7 @@ public partial class AdminPlus
     private void SendHSay(CCSPlayerController from, string message)
     {
         var text = string.Format(CultureInfo.InvariantCulture, Localizer["css_hsay"], from.PlayerName ?? from.SteamID.ToString(), message);
-        Server.NextFrame(() => VirtualFunctions.ClientPrintAll(HudDestination.Alert, text, 0, 0, 0, 0));
+        Server.NextFrame(() => VirtualFunctions.ClientPrintAll(HudDestination.Alert, text, 0, 0, 0, 0, 0));
     }
 
     private void SendPSay(CCSPlayerController from, CCSPlayerController to, string message)
