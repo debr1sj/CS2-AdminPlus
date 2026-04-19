@@ -28,10 +28,6 @@ Advanced CounterStrikeSharp admin plugin with comprehensive features: ban/kick s
 - [CounterStrikeSharp](https://github.com/roflmuffin/CounterStrikeSharp) framework
 - [Metamod:Source](https://www.sourcemm.net/downloads.php?branch=dev) plugin
 
-### 🔗 Dependencies
-
-AdminPlus ships with its own built-in menu system and does not require additional menu plugins.
-
 ## 🚀 Installation
 
 1. Download the latest release
