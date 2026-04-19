@@ -9,7 +9,6 @@ using CounterStrikeSharp.API.Modules.Cvars;
 using CounterStrikeSharp.API.Modules.Entities;
 using CounterStrikeSharp.API.Modules.Events;
 using CounterStrikeSharp.API.Modules.Memory.DynamicFunctions;
-using CounterStrikeSharp.API.Modules.Menu;
 using CounterStrikeSharp.API.Modules.Timers;
 using CounterStrikeSharp.API.Modules.Utils;
 using CounterStrikeSharp.API.ValveConstants.Protobuf;
@@ -24,7 +23,6 @@ using System.Text.Json.Nodes;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
-using MenuManager;
 
 namespace AdminPlus;
 
@@ -33,7 +31,7 @@ namespace AdminPlus;
 public partial class AdminPlus : BasePlugin
 {
     public override string ModuleName => "AdminPlus";
-    public override string ModuleVersion => "1.0.5";
+    public override string ModuleVersion => "1.0.6";
     public override string ModuleAuthor => "debr1sj";
 
     internal static string BannedUserPath = string.Empty;
@@ -54,10 +52,7 @@ public partial class AdminPlus : BasePlugin
     internal static AdminPlus? _instance;
     private bool _communicationInitialized = false;
     
-    internal static IMenuApi? MenuApi;
-    private static readonly PluginCapability<IMenuApi> MenuCapability = new("menu:nfcore");
-    
-    
+
     public static string GetPrefix()
     {
         return _instance?.Localizer?["Prefix"] ?? "";
@@ -138,6 +133,10 @@ public partial class AdminPlus : BasePlugin
         RegisterHelpCommands();
         
         RegisterReportCommands();
+        RegisterListener<Listeners.OnPlayerButtonsChanged>(OnInternalMenuButtonsChanged);
+        RegisterListener<Listeners.OnTick>(OnInternalMenuTick);
+        AddCommandListener("say", OnInternalMenuSay, HookMode.Pre);
+        AddCommandListener("say_team", OnInternalMenuSay, HookMode.Pre);
 
         InitializeReservationSystem();
     }
@@ -165,27 +164,6 @@ public partial class AdminPlus : BasePlugin
     {
         base.OnAllPluginsLoaded(hotReload);
         
-        try
-        {
-            MenuApi = MenuCapability.Get();
-            if (MenuApi != null)
-            {
-            }
-            else
-            {
-                Console.WriteLine("[AdminPlus] MenuManager API not found, using fallback CenterHtmlMenu");
-            }
-        }
-        catch (KeyNotFoundException)
-        {
-            Console.WriteLine("[AdminPlus] MenuManager plugin not found, using fallback CenterHtmlMenu");
-            MenuApi = null;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[AdminPlus] Error loading MenuManager API: {ex.Message}, using fallback CenterHtmlMenu");
-            MenuApi = null;
-        }
         AddCommand("admins", Localizer["Admins.Usage"], CmdAdmins);
         AddCommand("css_admins", "List online admins in console", CmdAdmins);
         AddCommand("version", "Print AdminPlus name and version to console", CmdPluginVersion);
@@ -909,40 +887,6 @@ public partial class AdminPlus : BasePlugin
         Console.WriteLine(message);
     }
     
-    internal static IMenu? CreateMenu(string title, Action<CCSPlayerController>? backAction = null)
-    {
-        if (MenuApi == null)
-        {
-            Console.WriteLine("[AdminPlus] MenuManager API not available, falling back to CenterHtmlMenu");
-            return _instance != null ? new CenterHtmlMenu(title, _instance) : null;
-        }
-
-        return MenuApi?.GetMenu(title);
-    }
-
-    internal static IMenu? CreateMenuForcedType(string title, MenuType menuType, Action<CCSPlayerController>? backAction = null)
-    {
-        if (MenuApi == null)
-        {
-            Console.WriteLine("[AdminPlus] MenuManager API not available, falling back to CenterHtmlMenu");
-            return _instance != null ? new CenterHtmlMenu(title, _instance) : null;
-        }
-
-        return MenuApi?.GetMenuForcetype(title, menuType);
-    }
-
-    internal static void OpenMenu(CCSPlayerController player, IMenu? menu)
-    {
-        if (menu == null) return;
-        menu.Open(player);
-    }
-
-    internal static void CloseMenu(CCSPlayerController player)
-    {
-        MenuApi?.CloseMenu(player);
-    }
-
-
     private string GetServerUptime()
     {
         try
@@ -1102,7 +1046,7 @@ public partial class AdminPlus : BasePlugin
     }
 
     private CCSPlayerController? _selectedReportTarget = null;
-    private IMenu? _activeReportMenu = null;
+    private AdminPlusMenu? _activeReportMenu = null;
 
 
     private void ProcessReport(CCSPlayerController reporter, CCSPlayerController reported, string reason)

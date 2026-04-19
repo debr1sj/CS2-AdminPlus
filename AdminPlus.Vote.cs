@@ -2,7 +2,6 @@ using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Admin;
 using CounterStrikeSharp.API.Modules.Commands;
-using CounterStrikeSharp.API.Modules.Menu;
 using CounterStrikeSharp.API.Modules.Utils;
 using CounterStrikeSharp.API.Modules.Timers;
 using CounterStrikeSharp.API.ValveConstants.Protobuf;
@@ -18,7 +17,7 @@ namespace AdminPlus;
 public partial class AdminPlus
 {
 
-    private static IMenu? _currentVoteMenu = null;
+    private static AdminPlusMenu? _currentVoteMenu = null;
     private static Dictionary<string, int> _voteResults = new();
     private static Dictionary<CCSPlayerController, string> _playerVotes = new();
     private static Timer? _voteTimer = null;
@@ -314,7 +313,6 @@ public partial class AdminPlus
         {
             if (player.IsValid)
             {
-                CloseMenu(player);
                 newMenu.Open(player);
             }
         }
@@ -344,7 +342,6 @@ public partial class AdminPlus
         {
             if (player.IsValid)
             {
-                CloseMenu(player);
                 newMenu.Open(player);
             }
         }
@@ -374,7 +371,6 @@ public partial class AdminPlus
         {
             if (player.IsValid)
             {
-                CloseMenu(player);
                 newMenu.Open(player);
             }
         }
@@ -399,7 +395,8 @@ public partial class AdminPlus
 
     private void CreateVoteMenu(string question, List<string> options)
     {
-        _currentVoteMenu = new CenterHtmlMenu(Localizer["Vote.MenuTitle", question], this);
+        _currentVoteMenu = CreateMenu(Localizer["Vote.MenuTitle", question]);
+        if (_currentVoteMenu == null) return;
 
         foreach (string option in options)
         {
@@ -448,7 +445,6 @@ public partial class AdminPlus
         {
             if (player.IsValid)
             {
-                CloseMenu(player);
                 _currentVoteMenu.Open(player);
             }
         }
@@ -471,7 +467,6 @@ public partial class AdminPlus
         {
             if (player.IsValid)
             {
-                CloseMenu(player);
                 _currentVoteMenu.Open(player);
             }
         }
