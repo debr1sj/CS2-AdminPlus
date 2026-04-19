@@ -30,13 +30,7 @@ Advanced CounterStrikeSharp admin plugin with comprehensive features: ban/kick s
 
 ### 🔗 Dependencies
 
-AdminPlus requires the following plugins to be installed:
-
-- **[MenuManagerCS2](https://github.com/NickFox007/MenuManagerCS2)**
-- **[PlayerSettingsCS2](https://github.com/NickFox007/PlayerSettingsCS2)**
-- **[AnyBaseLibCS2](https://github.com/NickFox007/AnyBaseLibCS2)**
-
-> ⚠️ **Important**: All dependencies must be installed and running before AdminPlus can function properly.
+AdminPlus ships with its own built-in menu system and does not require additional menu plugins.
 
 ## 🚀 Installation
 
@@ -271,7 +265,7 @@ Check the images folder examples to see how your Discord logs will look:
 
 ## 🎮 Advanced Menu System
 
-The plugin features a powerful easy menu system powered by [MenuManagerCS2](https://github.com/NickFox007/MenuManagerCS2), accessible via `css_admin`:
+The plugin features a powerful built-in menu system, accessible via `css_admin`:
 
 ### 📋 Menu Categories
 - **👥 Admin Management**: Add/remove admins with immunity levels and group management
@@ -361,7 +355,12 @@ Quick map access with aliases:
 
 ## 📋 Changelog
 
-### 🔧 Version 1.0.5 (Latest) — Hotfix
+### 🔧 Version 1.0.6 (Latest) — Internal Menu Update
+- **Menu system**
+  - Replaced external menu dependency with a fully built-in AdminPlus menu infrastructure.
+  - Added integrated button-controlled menu behavior with stable live refresh for vote menus.
+
+### 🔧 Version 1.0.5 — Hotfix
 - **Reservation system**
   - Removed the concurrent “max reserved admins” cap (previously an extra admin could be rejected/kicked when too many admins were already connected).
   - Players protected from being kicked for a reservation slot now use the same effective-permission model as `!admins` / `css_admins` (`@css/root`, `@css/ban`, `@css/generic` via `admins.json` / groups), plus `@css/reservation` for dedicated reservation access.
@@ -447,7 +446,7 @@ Quick map access with aliases:
 If you encounter any issues or bugs:
 1. Check the [GitHub Issues](https://github.com/debr1sj/CS2-AdminPlus/issues) first
 2. Create a new issue with:
-   - **Plugin version**: AdminPlus v1.0.5
+   - **Plugin version**: AdminPlus v1.0.6
    - **CounterStrikeSharp version**: Your CSS version
    - **Error logs**: Any console errors
    - **Steps to reproduce**: How to trigger the bug
