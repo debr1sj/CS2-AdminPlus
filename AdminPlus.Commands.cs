@@ -736,7 +736,7 @@ public partial class AdminPlus
 
     private List<CCSPlayerController> ResolveTargetsMultiWithBots(string token, bool onlyAlive)
     {
-        var players = Utilities.GetPlayers()?.Where(p => p != null && p.IsValid).ToList() ?? new(); // Botlar dahil
+        var players = Utilities.GetPlayers()?.Where(p => p != null && p.IsValid).ToList() ?? new();
         if (token.StartsWith("@"))
         {
             var teamList = GetPlayersFromTeamInput(token);

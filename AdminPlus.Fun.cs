@@ -366,10 +366,10 @@ public partial class AdminPlus
             var msg = UserMessage.FromPartialName("Fade");
             msg.SetInt("duration", Convert.ToInt32(fade * 512));
             msg.SetInt("hold_time", Convert.ToInt32(hold * 512));
-            int flags = 0x0001; // FADE_IN
-            if (hold <= 0) flags = 0x0002; // FADE_OUT
-            if (stayout) flags |= 0x0008; // STAYOUT
-            if (purge) flags |= 0x0010; // PURGE
+            int flags = 0x0001;
+            if (hold <= 0) flags = 0x0002;
+            if (stayout) flags |= 0x0008;
+            if (purge) flags |= 0x0010;
             msg.SetInt("flags", flags);
             msg.SetInt("color", color.R | (color.G << 8) | (color.B << 16) | (color.A << 24));
             msg.Send(player);
@@ -438,7 +438,7 @@ public partial class AdminPlus
         if (!ResolveTargets(caller, info.GetArg(1), false, true, false, out var players, out var admin, out var label, out _, allowBots: true))
         { SendErrorMessage(caller, "OnlyAlive", Localizer["OnlyAlive"]); return; }
         
-        int val = -1; // -1 = toggle, 0 = off, 1 = on
+        int val = -1;
         if (info.ArgCount >= 3)
         {
             if (!int.TryParse(info.GetArg(2), out val)) { SendErrorMessage(caller, "MustBeInteger", Localizer["MustBeInteger"]); return; }
@@ -676,7 +676,7 @@ public partial class AdminPlus
         if (!ResolveTargets(caller, info.GetArg(1), true, false, false, out var players, out var admin, out var label, out _, true))
         { SendErrorMessage(caller, "NoMatchingClient", Localizer["NoMatchingClient"]); return; }
         
-        int on = -1; // -1 = toggle, 0 = off, 1 = on
+        int on = -1;
         if (info.ArgCount >= 3)
         {
             if (!int.TryParse(info.GetArg(2), out on)) { SendErrorMessage(caller, "MustBeInteger", Localizer["MustBeInteger"]); return; }
@@ -872,7 +872,7 @@ public partial class AdminPlus
         if (!ResolveTargets(caller, info.GetArg(1), true, false, false, out var players, out var admin, out var label, out _, true))
         { SendErrorMessage(caller, "NoMatchingClient", Localizer["NoMatchingClient"]); return; }
         
-        int on = -1; // -1 = toggle, 0 = off, 1 = on
+        int on = -1;
         if (info.ArgCount >= 3)
         {
             if (!int.TryParse(info.GetArg(2), out on)) { SendErrorMessage(caller, "MustBeInteger", Localizer["MustBeInteger"]); return; }
@@ -1292,7 +1292,6 @@ public partial class AdminPlus
             RememberTimer(t, FunTimer.Drug, AddTimer(0.033f, () =>
             {
                 time += 0.033f;
-                // Keep mouse fully free: no camera-angle forcing.
                 if (((int)(time * 10)) % 2 == 0)
                 {
                     ColorScreen(t, Color.FromArgb(rnd.Next(256), rnd.Next(256), rnd.Next(256), 90), 0.18f, 0.10f, stayout: true, purge: false);

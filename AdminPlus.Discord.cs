@@ -564,7 +564,7 @@ public static class Discord
         };
     }
 
-    public static async Task SendConnectionLog(string playerName, string steamId, string ip, string action, AdminPlus plugin)
+    public static async Task SendConnectionLog(string playerName, string steamId, string action, AdminPlus plugin)
     {
         if (string.IsNullOrWhiteSpace(ConnectionLogsWebhook))
             return;
@@ -590,7 +590,6 @@ public static class Discord
                         {
                             new { name = plugin.Localizer["Discord.ConnectionLog.PlayerName"].Value, value = $"▶ {playerName}", inline = true },
                             new { name = plugin.Localizer["Discord.ConnectionLog.SteamID"].Value, value = $"▶ `{steamId3}`", inline = true },
-                            new { name = plugin.Localizer["Discord.ConnectionLog.IPAddress"].Value, value = $"▶ `{ip}`", inline = true },
                             new { name = "⏰ Time", value = $"<t:{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}:R>", inline = true }
                         },
                         footer = new
@@ -609,7 +608,7 @@ public static class Discord
         }
     }
 
-    public static async Task SendBanLog(string playerName, string steamId, string ip, string adminName, string reason, string duration, bool isUnban, AdminPlus plugin)
+    public static async Task SendBanLog(string playerName, string steamId, string adminName, string reason, string duration, bool isUnban, AdminPlus plugin)
     {
         if (string.IsNullOrWhiteSpace(BanWebhook))
             return;
@@ -635,14 +634,12 @@ public static class Discord
                         {
                             new { name = plugin.Localizer["Discord.BanLog.PlayerName"].Value, value = $"▶ {playerName}", inline = true },
                             new { name = plugin.Localizer["Discord.BanLog.SteamID"].Value, value = $"▶ `{steamId3}`", inline = true },
-                            new { name = plugin.Localizer["Discord.BanLog.IPAddress"].Value, value = $"▶ `{ip}`", inline = true },
                             new { name = plugin.Localizer["Discord.BanLog.AdminName"].Value, value = $"▶ {adminName}", inline = true },
                             new { name = plugin.Localizer["Discord.BanLog.Reason"].Value, value = $"▶ {reason}", inline = true }
                         } : new[]
                         {
                             new { name = plugin.Localizer["Discord.BanLog.PlayerName"].Value, value = $"▶ {playerName}", inline = true },
                             new { name = plugin.Localizer["Discord.BanLog.SteamID"].Value, value = $"▶ `{steamId3}`", inline = true },
-                            new { name = plugin.Localizer["Discord.BanLog.IPAddress"].Value, value = $"▶ `{ip}`", inline = true },
                             new { name = plugin.Localizer["Discord.BanLog.AdminName"].Value, value = $"▶ {adminName}", inline = true },
                             new { name = plugin.Localizer["Discord.BanLog.Reason"].Value, value = $"▶ {reason}", inline = true },
                             new { name = plugin.Localizer["Discord.BanLog.Duration"].Value, value = $"▶ {duration}", inline = true }
@@ -807,7 +804,7 @@ public static class Discord
         
         if (string.IsNullOrWhiteSpace(mention) || mention == "none" || mention == "")
         {
-            return ""; // Bildirim yok
+            return "";
         }
         else if (mention == "@everyone")
         {

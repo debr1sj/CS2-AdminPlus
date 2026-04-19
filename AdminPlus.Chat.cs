@@ -58,7 +58,7 @@ public partial class AdminPlus
             if (caller == null || !caller.IsValid || caller.IsBot)
                 return HookResult.Continue;
 
-            string cmd = info.GetArg(0) ?? string.Empty; // say / say_team
+            string cmd = info.GetArg(0) ?? string.Empty;
             string text = info.ArgCount >= 2 ? (info.GetArg(1) ?? string.Empty).Trim() : string.Empty;
             if (string.IsNullOrEmpty(text)) return HookResult.Continue;
 

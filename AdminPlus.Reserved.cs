@@ -5,26 +5,21 @@ using System.Linq;
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
-using CounterStrikeSharp.API.Modules.Admin;
 using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Cvars;
 using CounterStrikeSharp.API.ValveConstants.Protobuf;
 using static CounterStrikeSharp.API.Core.Listeners;
-using static CounterStrikeSharp.API.Modules.Admin.AdminManager;
 
 namespace AdminPlus;
 
 public partial class AdminPlus
 {
     private const string PlayerDesignerName = "cs_player_controller";
-    private const int MaxAdminReservations = 3;
     
     private bool _reservationEnabled = true;
     private bool _debugMode = false;
     
     private readonly ConcurrentDictionary<CCSPlayerController, double> _playerJoinTime = new();
-    private readonly ConcurrentBag<CCSPlayerController> _reservedAdmins = new();
-    private readonly object _reservationLock = new object();
     
     private ConVar? _svVisibleMaxPlayers;
     
@@ -101,15 +96,6 @@ public partial class AdminPlus
             
             _playerJoinTime.TryRemove(player, out _);
             
-            lock (_reservationLock)
-            {
-                var adminsToRemove = _reservedAdmins.Where(p => p == player).ToList();
-                foreach (var admin in adminsToRemove)
-                {
-                    _reservedAdmins.TryTake(out _);
-                }
-            }
-            
             UpdateReservationSettings();
             
             return HookResult.Continue;
@@ -129,10 +115,9 @@ public partial class AdminPlus
             
             if (player.IsBot) return HookResult.Continue;
             
-            bool isAdmin = AdminManager.PlayerHasPermissions(player, "@css/admin") || 
-                          AdminManager.PlayerHasPermissions(player, "@css/reservation");
+            bool canUseReservation = PlayerHasReservationPrivileges(player);
             
-            if (!isAdmin)
+            if (!canUseReservation)
             {
                 if (currentPlayers < maxPlayers)
                 {
@@ -146,41 +131,24 @@ public partial class AdminPlus
                 }
             }
             
-            if (isAdmin)
+            if (canUseReservation)
             {
-                lock (_reservationLock)
+                if (currentPlayers < maxPlayers)
                 {
-                    if (_reservedAdmins.Count >= MaxAdminReservations)
-                    {
-                        player.Print(Localizer["Reservation.AdminLimitReached", MaxAdminReservations]);
-                        AddTimer(0.1f, () => KickPlayerForReservation(player));
-                        return HookResult.Continue;
-                    }
-                    
-                    if (currentPlayers < maxPlayers)
-                    {
-                        _reservedAdmins.Add(player);
-                        return HookResult.Continue;
-                    }
-                    else
-                    {
-                        var targetToKick = SelectPlayerToKick();
-                        if (targetToKick != null)
-                        {
-                            _reservedAdmins.Add(player);
-                            player.Print(Localizer["Reservation.AdminKicking", targetToKick.PlayerName]);
-                            
-                            AddTimer(0.1f, () => KickPlayerForReservation(targetToKick));
-                            return HookResult.Continue;
-                        }
-                        else
-                        {
-                            player.Print(Localizer["Reservation.AdminCannotEnter"]);
-                            AddTimer(0.1f, () => KickPlayerForReservation(player));
-                            return HookResult.Continue;
-                        }
-                    }
+                    return HookResult.Continue;
                 }
+                
+                var targetToKick = SelectPlayerToKick();
+                if (targetToKick != null)
+                {
+                    player.Print(Localizer["Reservation.AdminKicking", targetToKick.PlayerName]);
+                    AddTimer(0.1f, () => KickPlayerForReservation(targetToKick));
+                    return HookResult.Continue;
+                }
+                
+                player.Print(Localizer["Reservation.AdminCannotEnter"]);
+                AddTimer(0.1f, () => KickPlayerForReservation(player));
+                return HookResult.Continue;
             }
             
             return HookResult.Continue;
@@ -189,6 +157,14 @@ public partial class AdminPlus
         {
             return HookResult.Continue;
         }
+    }
+    
+    private bool PlayerHasReservationPrivileges(CCSPlayerController player)
+    {
+        return HasEffectivePermission(player, "@css/root") ||
+               HasEffectivePermission(player, "@css/ban") ||
+               HasEffectivePermission(player, "@css/generic") ||
+               HasEffectivePermission(player, "@css/reservation");
     }
     
     private CCSPlayerController? SelectPlayerToKick()
@@ -207,15 +183,7 @@ public partial class AdminPlus
                     continue;
                 }
                 
-                bool isAdminPlayer = false;
-                lock (_reservationLock)
-                {
-                    isAdminPlayer = _reservedAdmins.Contains(player);
-                }
-                
-                if (isAdminPlayer || 
-                    AdminManager.PlayerHasPermissions(player, "@css/admin") || 
-                    AdminManager.PlayerHasPermissions(player, "@css/reservation"))
+                if (PlayerHasReservationPrivileges(player))
                 {
                     continue;
                 }
@@ -386,11 +354,6 @@ public partial class AdminPlus
             
             _playerJoinTime.Clear();
             
-            lock (_reservationLock)
-            {
-                while (_reservedAdmins.TryTake(out _)) { }
-            }
-            
             if (_svVisibleMaxPlayers != null)
             {
                 _svVisibleMaxPlayers.SetValue(-1);
@@ -415,18 +378,6 @@ public partial class AdminPlus
             foreach (var player in expiredPlayers)
             {
                 _playerJoinTime.TryRemove(player, out _);
-            }
-            
-            lock (_reservationLock)
-            {
-                var invalidAdmins = _reservedAdmins
-                    .Where(admin => !IsPlayerValid(admin))
-                    .ToList();
-                
-                foreach (var admin in invalidAdmins)
-                {
-                    _reservedAdmins.TryTake(out _);
-                }
             }
         }
         catch (Exception ex)

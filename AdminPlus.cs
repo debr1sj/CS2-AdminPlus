@@ -33,7 +33,7 @@ namespace AdminPlus;
 public partial class AdminPlus : BasePlugin
 {
     public override string ModuleName => "AdminPlus";
-    public override string ModuleVersion => "1.0.4";
+    public override string ModuleVersion => "1.0.5";
     public override string ModuleAuthor => "debr1sj";
 
     internal static string BannedUserPath = string.Empty;
@@ -188,6 +188,8 @@ public partial class AdminPlus : BasePlugin
         }
         AddCommand("admins", Localizer["Admins.Usage"], CmdAdmins);
         AddCommand("css_admins", "List online admins in console", CmdAdmins);
+        AddCommand("version", "Print AdminPlus name and version to console", CmdPluginVersion);
+        AddCommand("css_version", "Print AdminPlus name and version to console", CmdPluginVersion);
         
         RegisterListener<Listeners.OnClientAuthorized>((slot, id) =>
         {
@@ -263,14 +265,14 @@ public partial class AdminPlus : BasePlugin
 
         RegisterEventHandler<EventPlayerDeath>((@event, info) =>
         {
-            var victim = @event.Userid; // CCSPlayerController?
+            var victim = @event.Userid;
             victim?.CopyLastCoord();
             return HookResult.Continue;
         });
 
         RegisterEventHandler<EventPlayerSpawn>((@event, info) =>
         {
-            var player = @event.Userid; // CCSPlayerController?
+            var player = @event.Userid;
             player?.RemoveLastCoord();
 
             if (player != null && player.IsValid)
@@ -282,7 +284,7 @@ public partial class AdminPlus : BasePlugin
                 if (!_loggedPlayers.Contains(steamId))
                 {
                     _loggedPlayers.Add(steamId);
-                    _ = Discord.SendConnectionLog(player.PlayerName, player.SteamID.ToString(), player.IpAddress ?? "Unknown", "Connect", _instance!);
+                    _ = Discord.SendConnectionLog(player.PlayerName, player.SteamID.ToString(), "Connect", _instance!);
                 }
             }
             
@@ -309,7 +311,7 @@ public partial class AdminPlus : BasePlugin
                 if (player == null || !player.IsValid || player.IsBot)
                     return HookResult.Continue;
 
-                _ = Discord.SendConnectionLog(player.PlayerName, player.SteamID.ToString(), player.IpAddress ?? "Unknown", "Disconnect", this);
+                _ = Discord.SendConnectionLog(player.PlayerName, player.SteamID.ToString(), "Disconnect", this);
                 
                 _loggedPlayers.Remove(player.SteamID);
 
@@ -405,7 +407,6 @@ public partial class AdminPlus : BasePlugin
         try
         {
             var now = DateTime.UtcNow;
-            // Throttle reload attempts; we still parse file changes quickly.
             if ((now - _lastBanCacheRefreshUtc).TotalMilliseconds < 800)
                 return;
 
@@ -439,8 +440,6 @@ public partial class AdminPlus : BasePlugin
 
     private void ScheduleBanRechecks(int playerSlot)
     {
-        // Defense-in-depth: recheck in first seconds after authorization
-        // to avoid rare timing/race windows during connection flow.
         AddTimer(0.10f, () => EnforceBan(playerSlot));
         AddTimer(0.30f, () => EnforceBan(playerSlot));
         AddTimer(0.5f, () => EnforceBan(playerSlot));
@@ -590,6 +589,48 @@ public partial class AdminPlus : BasePlugin
             Console.WriteLine($"[AdminPlus] IpBan parse error: {ex.Message}");
         }
         return false;
+    }
+
+    private void PrintPluginVersionToConsole(CCSPlayerController? caller)
+    {
+        var line = $"{ModuleName} plugin version {ModuleVersion}";
+        if (caller != null && caller.IsValid && !caller.IsBot)
+            caller.PrintToConsole($"[AdminPlus] {line}");
+        else
+            Console.WriteLine($"[AdminPlus] {line}");
+    }
+
+    private bool TryHandlePublicVersionChatCommand(CCSPlayerController? player, string rawMessage)
+    {
+        if (player == null || !player.IsValid || player.IsBot)
+            return false;
+
+        var t = (rawMessage ?? string.Empty).Trim();
+        if (t.Length == 0)
+            return false;
+
+        if (t.Equals("!version", StringComparison.OrdinalIgnoreCase) ||
+            t.Equals("/version", StringComparison.OrdinalIgnoreCase) ||
+            t.Equals("!css_version", StringComparison.OrdinalIgnoreCase) ||
+            t.Equals("/css_version", StringComparison.OrdinalIgnoreCase))
+        {
+            PrintPluginVersionToConsole(player);
+            return true;
+        }
+
+        return false;
+    }
+
+    private void CmdPluginVersion(CCSPlayerController? caller, CommandInfo info)
+    {
+        try
+        {
+            PrintPluginVersionToConsole(caller);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[AdminPlus] version command error: {ex.Message}");
+        }
     }
 
     private void CmdAdmins(CCSPlayerController? caller, CommandInfo info)
@@ -783,7 +824,6 @@ public partial class AdminPlus : BasePlugin
                 }
             }
 
-            // Avoid unbounded growth in report cooldown dictionaries.
             var reportCutoff = DateTime.Now.AddMinutes(-10);
             var oldGlobalCooldowns = _lastReportTime.Where(kv => kv.Value < reportCutoff).Select(kv => kv.Key).ToList();
             foreach (var key in oldGlobalCooldowns)
@@ -973,14 +1013,14 @@ public partial class AdminPlus : BasePlugin
 
 
     private readonly Dictionary<ulong, DateTime> _lastReportTime = new();
-    private readonly Dictionary<string, DateTime> _playerReportingCooldowns = new(); // reporter_steamid:target_steamid -> DateTime
+    private readonly Dictionary<string, DateTime> _playerReportingCooldowns = new();
 
     private bool CheckReportCooldown(string playerId)
     {
         if (_lastReportTime.TryGetValue(ulong.Parse(playerId), out DateTime lastReportTime))
         {
             var secondsSinceLastReport = (DateTime.Now - lastReportTime).TotalSeconds;
-            return secondsSinceLastReport >= 120; // 2 minutes cooldown
+            return secondsSinceLastReport >= 120;
         }
         return true;
     }
@@ -991,7 +1031,7 @@ public partial class AdminPlus : BasePlugin
         if (_playerReportingCooldowns.TryGetValue(key, out DateTime lastReport))
         {
             var timeSinceLastReport = DateTime.Now - lastReport;
-            return timeSinceLastReport.TotalMinutes >= 3.0; // 3 dakika cooldown
+            return timeSinceLastReport.TotalMinutes >= 3.0;
         }
         return true;
     }

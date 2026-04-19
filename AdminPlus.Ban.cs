@@ -19,6 +19,11 @@ public partial class AdminPlus
 {
     private Dictionary<ulong, int> adminImmunity = new();
     private Dictionary<ulong, (DateTime seenAt, string ip)> recentSeen = new();
+
+    private string FormatDiscordBanDurationMinutes(int minutes) =>
+        minutes == 0
+            ? Localizer["Discord.BanLog.Permanent"].Value
+            : Localizer["Duration.Temporary", minutes].Value;
     
     public void CleanupBanSystem()
     {
@@ -171,13 +176,13 @@ public partial class AdminPlus
 
             LogAction($"{executorName} banned {bannedCount} players from {teamName} for {minutes} minutes. Reason: {reason}");
             
-            string banDurationText = minutes == 0 ? Localizer["Discord.BanLog.Permanent"].Value : $"{minutes} dakika";
+            string banDurationText = FormatDiscordBanDurationMinutes(minutes);
             foreach (var target in teamPlayers)
             {
                 if (target != null && target.IsValid)
                 {
                     AddTimer(0.1f, () => {
-                        _ = Discord.SendBanLog(target.PlayerName, target.SteamID.ToString(), target.IpAddress ?? "-", executorName, reason, banDurationText, false, this);
+                        _ = Discord.SendBanLog(target.PlayerName, target.SteamID.ToString(), executorName, reason, banDurationText, false, this);
                     });
                 }
             }
@@ -255,9 +260,9 @@ public partial class AdminPlus
 
         LogAction($"{executorName} banned {safeName} ({steamId}) [IP:{ip}] for {minutes} minutes. Reason: {reason}");
         
-        string durationText = minutes == 0 ? Localizer["Discord.BanLog.Permanent"].Value : $"{minutes} dakika";
+        string durationText = FormatDiscordBanDurationMinutes(minutes);
         AddTimer(0.1f, () => {
-            _ = Discord.SendBanLog(safeName, steamId, ip, executorName, reason, durationText, false, this);
+            _ = Discord.SendBanLog(safeName, steamId, executorName, reason, durationText, false, this);
         });
     }
 
@@ -356,7 +361,7 @@ public partial class AdminPlus
         LogAction($"{executorName} IP banned {displayName} ({ip}). Reason: {reason}");
         
         AddTimer(0.1f, () => {
-            _ = Discord.SendBanLog(displayName, "IP Ban", ip, executorName, reason, Localizer["Discord.BanLog.Permanent"].Value, false, this);
+            _ = Discord.SendBanLog(displayName, "IP Ban", executorName, reason, Localizer["Discord.BanLog.Permanent"].Value, false, this);
         });
     }
 
@@ -389,7 +394,7 @@ public partial class AdminPlus
         
         if (!key.Contains("STEAM_") && !key.Contains("."))
         {
-            var target = GetPlayerFromInput(key, true); // Her zaman console modu gibi davran
+            var target = GetPlayerFromInput(key, true);
             if (target != null && target.IsValid)
             {
                 key = target.SteamID.ToString();
@@ -453,7 +458,7 @@ public partial class AdminPlus
             LogAction($"{executorName} unbanned {key}");
             
             AddTimer(0.1f, () => {
-                _ = Discord.SendBanLog(playerName, key, ip, executorName, reason, "N/A", true, this);
+                _ = Discord.SendBanLog(playerName, key, executorName, reason, "N/A", true, this);
             });
         }
         else

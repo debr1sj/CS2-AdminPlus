@@ -35,15 +35,16 @@ public partial class AdminPlus
     {
         "rtv", "nominate", "timeleft", "rank", "top", "help", "rules",
         "admins", "menu", "rs", "ws", "wp", "knife", "glove", "agent",
-        "kf", "ajan", "report", "calladmin", "spec", "join", "jointeam"
+        "kf", "ajan", "report", "calladmin", "spec", "join", "jointeam",
+        "version", "css_version"
     };
 
     public class CommunicationPunishment
     {
         public ulong SteamID { get; set; }
         public string PlayerName { get; set; } = string.Empty;
-        public string Type { get; set; } = string.Empty; // "MUTE" or "GAG"
-        public int Duration { get; set; } // in minutes
+        public string Type { get; set; } = string.Empty;
+        public int Duration { get; set; }
         public string Reason { get; set; } = string.Empty;
         public string AdminName { get; set; } = string.Empty;
         public ulong AdminSteamID { get; set; }
@@ -256,7 +257,6 @@ public partial class AdminPlus
             if (currentWrite == _lastCommDataWriteUtc)
                 return;
 
-            // Manual edits or external writes detected; force reload.
             LoadCommunicationData();
         }
         catch (Exception ex)
@@ -787,6 +787,10 @@ public partial class AdminPlus
         if (player == null || !player.IsValid || player.IsBot)
             return HookResult.Continue;
 
+        var chatText = info.GetArg(1) ?? "";
+        if (TryHandlePublicVersionChatCommand(player, chatText))
+            return HookResult.Handled;
+
         TryRefreshCommunicationDataIfChanged();
 
         bool isGagged = IsPlayerPunished(player.SteamID, "GAG") ||
@@ -796,7 +800,7 @@ public partial class AdminPlus
         if (!isGagged)
             return HookResult.Continue;
 
-        string message = info.GetArg(1) ?? "";
+        string message = chatText;
 
         if (IsPrefixedCommand(message) && IsAllowedCommand(message))
             return HookResult.Continue;

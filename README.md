@@ -361,7 +361,14 @@ Quick map access with aliases:
 
 ## 📋 Changelog
 
-### 🎉 Version 1.0.4 (Latest)
+### 🔧 Version 1.0.5 (Latest) — Hotfix
+- **Reservation system**
+  - Removed the concurrent “max reserved admins” cap (previously an extra admin could be rejected/kicked when too many admins were already connected).
+  - Players protected from being kicked for a reservation slot now use the same effective-permission model as `!admins` / `css_admins` (`@css/root`, `@css/ban`, `@css/generic` via `admins.json` / groups), plus `@css/reservation` for dedicated reservation access.
+- **Discord webhooks**
+  - Player IP is no longer included in **connection logs** or **ban log** embeds (privacy).
+
+### 🎉 Version 1.0.4
 - 🔐 **Admin Permission Reliability**:
   - Added robust effective permission checks for menu/command access
   - Improved `css_addadmin` handling for flag/group normalization
@@ -430,7 +437,7 @@ Quick map access with aliases:
 
 ## 🗺️ Roadmap
 
-### 🚀 Upcoming Features (v1.0.5+)
+### 🚀 Upcoming Features (v1.0.6+)
 - 🌍 **Expanded Multi-language Support**: Complete translation system with 12+ languages
 - 🔧 **Code Improvements & Bug Fixes**: Performance optimizations, security patches, bug fixes, and stability enhancements
 
@@ -440,7 +447,7 @@ Quick map access with aliases:
 If you encounter any issues or bugs:
 1. Check the [GitHub Issues](https://github.com/debr1sj/CS2-AdminPlus/issues) first
 2. Create a new issue with:
-   - **Plugin version**: AdminPlus v1.0.4
+   - **Plugin version**: AdminPlus v1.0.5
    - **CounterStrikeSharp version**: Your CSS version
    - **Error logs**: Any console errors
    - **Steps to reproduce**: How to trigger the bug
