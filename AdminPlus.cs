@@ -727,6 +727,11 @@ public partial class AdminPlus : BasePlugin
 
     internal static string GetServerAddress()
     {
+        if (!string.IsNullOrEmpty(Discord.ConfiguredServerAddress))
+        {
+            return Discord.ConfiguredServerAddress;
+        }
+
         string ip = "0.0.0.0";
         string port = "27015";
 
