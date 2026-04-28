@@ -42,7 +42,7 @@ The plugin uses file-based storage:
 - `csgo/cfg/banned_user.cfg` - SteamID bans
 - `csgo/cfg/banned_ip.cfg` - IP bans
 - `csgo/addons/counterstrikesharp/plugins/AdminPlus/communication_data.json` - Mute/gag data
-- `csgo/addons/counterstrikesharp/plugins/AdminPlus/discord_config.json` - Discord webhook configuration
+- `csgo/addons/counterstrikesharp/plugins/AdminPlus/adminplus-discord.json` - Discord webhook configuration
 
 ## 📖 Commands
 
@@ -190,7 +190,7 @@ css_adminhelp                                # Show detailed command help [@css/
 
 ## 🔗 Discord Configuration
 
-Discord entegrasyonu için `csgo/addons/counterstrikesharp/plugins/AdminPlus/discord_config.json` dosyasını oluşturun:
+Discord entegrasyonu için `csgo/addons/counterstrikesharp/plugins/AdminPlus/adminplus-discord.json` dosyasını oluşturun:
 
 ```json
 {
@@ -202,7 +202,8 @@ Discord entegrasyonu için `csgo/addons/counterstrikesharp/plugins/AdminPlus/dis
     "connectionLogsWebhook": "https://discord.com/api/webhooks/0123456789/vwx567yza890",
     "chatLogsWebhook": "https://discord.com/api/webhooks/0123456789/bcd123efg456",
     "reportAndCalladminWebhook": "https://discord.com/api/webhooks/0123456789/hij789klm012",
-    "reportAndCalladminWebhookMentionUserId": "@everyone"
+    "reportAndCalladminWebhookMentionUserId": "@everyone",
+    "serverAddress": "your-ip:port"
   }
 }
 ```

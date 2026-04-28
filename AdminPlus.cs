@@ -727,9 +727,9 @@ public partial class AdminPlus : BasePlugin
 
     internal static string GetServerAddress()
     {
-        if (!string.IsNullOrEmpty(Discord.ConfiguredServerAddress))
+        if (!string.IsNullOrWhiteSpace(Discord.ConfiguredServerAddress))
         {
-            return Discord.ConfiguredServerAddress;
+            return Discord.ConfiguredServerAddress.Trim();
         }
 
         string ip = "0.0.0.0";
