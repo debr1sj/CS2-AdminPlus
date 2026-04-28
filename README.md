@@ -352,7 +352,13 @@ Quick map access with aliases:
 
 ## 📋 Changelog
 
-### 🔧 Version 1.0.6 (Latest) — Internal Menu Update
+### 🔧 Version 1.0.7 (Latest) — Discord Configuration Update
+- **Discord Integration**
+- Added a new configuration option for manually setting the server IP address used in Discord notifications.
+  - Server owners can now override automatic IP detection with a custom IP address or domain name.
+  - The adminplus-discord.json file has been redesigned to support the new serverAddress option.
+
+### 🔧 Version 1.0.6  — Internal Menu Update
 - **Menu system**
   - Replaced external menu dependency with a fully built-in AdminPlus menu infrastructure.
   - Added integrated button-controlled menu behavior with stable live refresh for vote menus.
