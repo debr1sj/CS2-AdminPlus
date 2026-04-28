@@ -94,6 +94,7 @@ public static class Discord
     private static string ChatLogsWebhook = "";
     private static string ReportAndCalladminWebhook = "";
     private static string ReportAndCalladminWebhookMentionUserId = "";
+    public static string ConfiguredServerAddress = "";
     private static Timer? _statusTimer;
 
     public static void LoadConfig()
@@ -101,17 +102,17 @@ public static class Discord
         try
         {
             var configFile = Path.Combine(AdminPlus._instance?.ModuleDirectory ?? "", "adminplus-discord.json");
-            
+
             if (!File.Exists(configFile))
             {
                 CreateDefaultConfig(configFile);
             }
-            
+
             if (File.Exists(configFile))
             {
                 var json = File.ReadAllText(configFile);
                 var config = JsonSerializer.Deserialize<DiscordConfig>(json, JsonOptions);
-                
+
                 if (config?.DiscordWebhooks != null)
                 {
                     BanWebhook = config.DiscordWebhooks.BanWebhook ?? "";
@@ -122,7 +123,7 @@ public static class Discord
                     ChatLogsWebhook = config.DiscordWebhooks.ChatLogsWebhook ?? "";
                     ReportAndCalladminWebhook = config.DiscordWebhooks.ReportAndCalladminWebhook ?? "";
                     ReportAndCalladminWebhookMentionUserId = config.DiscordWebhooks.ReportAndCalladminWebhookMentionUserId ?? "@everyone";
-                    
+                    ConfiguredServerAddress = config.DiscordWebhooks.ServerAddress ?? "";
                 }
                 else
                 {
@@ -151,7 +152,8 @@ public static class Discord
                     ConnectionLogsWebhook = "",
                     ChatLogsWebhook = "",
                     ReportAndCalladminWebhook = "",
-                    ReportAndCalladminWebhookMentionUserId = "@everyone"
+                    ReportAndCalladminWebhookMentionUserId = "@everyone",
+                    ServerAddress = ""
                 }
             };
             
@@ -1003,4 +1005,5 @@ public class DiscordWebhooks
     public string? ChatLogsWebhook { get; set; }
     public string? ReportAndCalladminWebhook { get; set; }
     public string? ReportAndCalladminWebhookMentionUserId { get; set; }
+    public string? ServerAddress { get; set; }
 }

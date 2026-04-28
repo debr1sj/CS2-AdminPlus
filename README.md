@@ -202,7 +202,8 @@ Discord entegrasyonu için `csgo/addons/counterstrikesharp/plugins/AdminPlus/adm
     "connectionLogsWebhook": "https://discord.com/api/webhooks/0123456789/vwx567yza890",
     "chatLogsWebhook": "https://discord.com/api/webhooks/0123456789/bcd123efg456",
     "reportAndCalladminWebhook": "https://discord.com/api/webhooks/0123456789/hij789klm012",
-    "reportAndCalladminWebhookMentionUserId": "@everyone"
+    "reportAndCalladminWebhookMentionUserId": "@everyone",
+    "serverAddress": "your-ip:port"
   }
 }
 ```
