@@ -439,7 +439,7 @@ Quick map access with aliases:
 
 ## 🗺️ Roadmap
 
-### 🚀 Upcoming Features (v1.0.6+)
+### 🚀 Upcoming Features (v1.0.8+)
 - 🌍 **Expanded Multi-language Support**: Complete translation system with 12+ languages
 - 🔧 **Code Improvements & Bug Fixes**: Performance optimizations, security patches, bug fixes, and stability enhancements
 
