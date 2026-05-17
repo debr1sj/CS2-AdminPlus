@@ -213,7 +213,7 @@ public partial class AdminPlus
             
             if (player.DesignerName != PlayerDesignerName) return false;
             
-            if (player.Connected != PlayerConnectedState.PlayerConnected) return false;
+            if (player.Connected != PlayerConnectedState.Connected) return false;
             
             if (string.IsNullOrEmpty(player.PlayerName)) return false;
             

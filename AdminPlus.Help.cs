@@ -20,11 +20,10 @@ public partial class AdminPlus
     {
         try
         {
-            Console.WriteLine("[AdminPlus] Help system cleaned up.");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[AdminPlus] Error during help cleanup: {ex.Message}");
+            LogError($"during help cleanup: {ex.Message}");
         }
     }
 

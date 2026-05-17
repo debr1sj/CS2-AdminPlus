@@ -27,11 +27,10 @@ public partial class AdminPlus
     {
         try
         {
-            Console.WriteLine("[AdminPlus] Menu system cleaned up.");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[AdminPlus] Error during menu cleanup: {ex.Message}");
+            LogError($"during menu cleanup: {ex.Message}");
         }
     }
 
@@ -1142,7 +1141,7 @@ public partial class AdminPlus
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"[AdminPlus] Map change error: {ex.Message}");
+                        LogError($"Map change error: {ex.Message}");
                         admin.Print(Localizer["Map.NotFound", map]);
                     }
                 });

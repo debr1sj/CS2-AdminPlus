@@ -43,6 +43,39 @@ The plugin uses file-based storage:
 - `csgo/cfg/banned_ip.cfg` - IP bans
 - `csgo/addons/counterstrikesharp/plugins/AdminPlus/communication_data.json` - Mute/gag data
 - `csgo/addons/counterstrikesharp/plugins/AdminPlus/adminplus-discord.json` - Discord webhook configuration
+- `csgo/addons/counterstrikesharp/plugins/AdminPlus/adminplus_menu_config.json` - In-game menu key bindings (created automatically on first load)
+
+### 🎮 Menu configuration (`adminplus_menu_config.json`)
+
+The built-in center menu reads key bindings from this file in the plugin folder. If the file is missing, AdminPlus creates it with defaults on startup.
+
+| Key | Default | Action |
+|-----|---------|--------|
+| `moveUp` | `W` | Move selection up |
+| `moveDown` | `S` | Move selection down |
+| `select` | `E` | Confirm / open option |
+| `back` | `A` | Go back (submenus only; also slider left when a slider is selected) |
+| `exit` | `R` | Close menu |
+| `sliderLeft` | `A` | Previous slider value |
+| `sliderRight` | `D` | Next slider value |
+
+**Allowed button names:** `W`, `S`, `E`, `A`, `D`, `R`, `Tab`, `Shift`
+
+**Example:**
+
+```json
+{
+  "moveUp": "W",
+  "moveDown": "S",
+  "select": "E",
+  "back": "A",
+  "exit": "R",
+  "sliderLeft": "A",
+  "sliderRight": "D"
+}
+```
+
+After editing the file, reload the map or restart the server so bindings apply.
 
 ## 📖 Commands
 
@@ -352,13 +385,28 @@ Quick map access with aliases:
 
 ## 📋 Changelog
 
-### 🔧 Version 1.0.7 (Latest) — Discord Configuration Update
+### 🔧 Version 1.0.8 (Latest)
+- **Compatibility**: CounterStrikeSharp API updated to `1.0.368`
+- **Menu system**
+  - Menu input handling aligned with MenuManager-style snapshot + `HasFlag` detection (fixes **R** not closing the menu)
+  - Removed in-menu “Back” row; navigation uses **A** only (no dual A+Shift / R+Tab defaults)
+  - Submenu history/back footer shown only when back is available
+  - New `adminplus_menu_config.json` for customizable menu keys
+- **Discord**: Webhooks send directly to Discord (removed Cloudflare Worker fallback)
+- **Commands**
+  - `css_map` / map change works from server console
+  - `!hideadmin` / `css_hideadmin` — hide all admins from `!admins` (session toggle, not saved to config)
+  - Plugin chat commands (e.g. `!admin`) can be hidden from public chat while still executing
+- **Localization**: `Menu.Back`, `HideAdmin.*` strings added across all language files
+- **Logging**: Reduced noisy console output
+
+### 🔧 Version 1.0.7 — Discord Configuration Update
 - **Discord Integration**
 - Added a new configuration option for manually setting the server IP address used in Discord notifications.
   - Server owners can now override automatic IP detection with a custom IP address or domain name.
   - The adminplus-discord.json file has been redesigned to support the new serverAddress option.
 
-### 🔧 Version 1.0.6  — Internal Menu Update
+### 🔧 Version 1.0.6 — Internal Menu Update
 - **Menu system**
   - Replaced external menu dependency with a fully built-in AdminPlus menu infrastructure.
   - Added integrated button-controlled menu behavior with stable live refresh for vote menus.
@@ -439,7 +487,7 @@ Quick map access with aliases:
 
 ## 🗺️ Roadmap
 
-### 🚀 Upcoming Features (v1.0.8+)
+### 🚀 Upcoming Features
 - 🌍 **Expanded Multi-language Support**: Complete translation system with 12+ languages
 - 🔧 **Code Improvements & Bug Fixes**: Performance optimizations, security patches, bug fixes, and stability enhancements
 
@@ -449,7 +497,7 @@ Quick map access with aliases:
 If you encounter any issues or bugs:
 1. Check the [GitHub Issues](https://github.com/debr1sj/CS2-AdminPlus/issues) first
 2. Create a new issue with:
-   - **Plugin version**: AdminPlus v1.0.6
+   - **Plugin version**: AdminPlus v1.0.8
    - **CounterStrikeSharp version**: Your CSS version
    - **Error logs**: Any console errors
    - **Steps to reproduce**: How to trigger the bug

@@ -31,8 +31,8 @@ namespace AdminPlus;
 public partial class AdminPlus : BasePlugin
 {
     public override string ModuleName => "AdminPlus";
-    public override string ModuleVersion => "1.0.7";
-    public override string ModuleAuthor => "debr1sj";
+    public override string ModuleVersion => "1.0.8";
+    public override string ModuleAuthor => "Debr1sj";
 
     internal static string BannedUserPath = string.Empty;
     internal static string BannedIpPath = string.Empty;
@@ -73,9 +73,8 @@ public partial class AdminPlus : BasePlugin
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[AdminPlus] ERROR: Failed to log action to daily log file");
-            Console.WriteLine($"[AdminPlus] ERROR: Log error: {ex.Message}");
-            Console.WriteLine($"[AdminPlus] ERROR: Stack trace: {ex.StackTrace}");
+            LogError($"Failed to log action to daily log file");
+            LogError($"Log error: {ex.Message}");
         }
     }
     
@@ -86,7 +85,6 @@ public partial class AdminPlus : BasePlugin
         if (!Directory.Exists(logDirectory))
         {
             Directory.CreateDirectory(logDirectory);
-            Console.WriteLine($"[AdminPlus] Created log directory: {logDirectory}");
         }
         
         var fileName = $"log-AdminPlus-{date:dd-MM-yyyy}.log";
@@ -107,6 +105,7 @@ public partial class AdminPlus : BasePlugin
 
         EnsureAdminConfigFiles();
         EnsurePluginDataFiles();
+        LoadMenuConfigFile();
 
             BannedUserPath = Path.Combine(Server.GameDirectory, "csgo/cfg/banned_user.cfg");
             BannedIpPath = Path.Combine(Server.GameDirectory, "csgo/cfg/banned_ip.cfg");
@@ -150,12 +149,11 @@ public partial class AdminPlus : BasePlugin
             if (!File.Exists(communicationDataPath))
             {
                 File.WriteAllText(communicationDataPath, "[]" + Environment.NewLine);
-                Console.WriteLine($"[AdminPlus] Created missing communication data file: {communicationDataPath}");
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[AdminPlus] ERROR: Failed to bootstrap plugin data files: {ex.Message}");
+            LogError($"Failed to bootstrap plugin data files: {ex.Message}");
         }
     }
 
@@ -165,6 +163,8 @@ public partial class AdminPlus : BasePlugin
         
         AddCommand("admins", Localizer["Admins.Usage"], CmdAdmins);
         AddCommand("css_admins", "List online admins in console", CmdAdmins);
+        RegisterHideAdminCommands();
+        LoadImmunity();
         AddCommand("version", "Print AdminPlus name and version to console", CmdPluginVersion);
         AddCommand("css_version", "Print AdminPlus name and version to console", CmdPluginVersion);
         
@@ -177,6 +177,7 @@ public partial class AdminPlus : BasePlugin
 
         RegisterListener<Listeners.OnClientDisconnect>((slot) =>
         {
+            CleanupMenuForSlot(slot);
             var player = Utilities.GetPlayerFromSlot(slot);
             if (player != null && player.IsValid && !player.IsBot)
             {
@@ -224,7 +225,7 @@ public partial class AdminPlus : BasePlugin
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[AdminPlus] Chat event error: {ex.Message}");
+                LogError($"Chat event error: {ex.Message}");
                 return HookResult.Continue;
             }
         });
@@ -296,7 +297,7 @@ public partial class AdminPlus : BasePlugin
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[AdminPlus] Player disconnect event error: {ex.Message}");
+                LogError($"Player disconnect event error: {ex.Message}");
                 return HookResult.Continue;
             }
         });
@@ -440,7 +441,6 @@ public partial class AdminPlus : BasePlugin
 
                 if (File.Exists(BannedUserPath))
                 {
-                    Console.WriteLine($"[AdminPlus] Loading SteamID bans from: {BannedUserPath}");
                     foreach (var line in File.ReadAllLines(BannedUserPath))
                     {
                         if (TryParseSteamBanLine(line, out var key, out var expiry, out var nick, out var ip))
@@ -457,7 +457,6 @@ public partial class AdminPlus : BasePlugin
 
                 if (File.Exists(BannedIpPath))
                 {
-                    Console.WriteLine($"[AdminPlus] Loading IP bans from: {BannedIpPath}");
                     foreach (var line in File.ReadAllLines(BannedIpPath))
                     {
                         if (TryParseIpBanLine(line, out var key, out var expiry, out var nick))
@@ -475,11 +474,7 @@ public partial class AdminPlus : BasePlugin
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[AdminPlus] ERROR: Failed to load ban files");
-                Console.WriteLine($"[AdminPlus] ERROR: SteamID bans path: {BannedUserPath}");
-                Console.WriteLine($"[AdminPlus] ERROR: IP bans path: {BannedIpPath}");
-                Console.WriteLine($"[AdminPlus] ERROR: {ex.Message}");
-                Console.WriteLine($"[AdminPlus] ERROR: Stack trace: {ex.StackTrace}");
+                LogError($"{ex.Message}");
             }
         }
     }
@@ -490,7 +485,6 @@ public partial class AdminPlus : BasePlugin
         {
             if (File.Exists(filePath))
             {
-                Console.WriteLine($"[AdminPlus] {banType.ToLower()} ban file already exists, skipping creation.");
                 return;
             }
 
@@ -515,11 +509,10 @@ public partial class AdminPlus : BasePlugin
             }
 
             File.WriteAllText(filePath, header);
-            Console.WriteLine($"[AdminPlus] Created empty {banType.ToLower()} ban file: {filePath}");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[AdminPlus] Failed to create {banType.ToLower()} ban file: {ex.Message}");
+            LogError($"Failed to create {banType.ToLower()} ban file: {ex.Message}");
         }
     }
 
@@ -541,7 +534,7 @@ public partial class AdminPlus : BasePlugin
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[AdminPlus] SteamBan parse error: {ex.Message}");
+            LogError($"SteamBan parse error: {ex.Message}");
         }
         return false;
     }
@@ -563,7 +556,7 @@ public partial class AdminPlus : BasePlugin
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[AdminPlus] IpBan parse error: {ex.Message}");
+            LogError($"IpBan parse error: {ex.Message}");
         }
         return false;
     }
@@ -606,7 +599,7 @@ public partial class AdminPlus : BasePlugin
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[AdminPlus] version command error: {ex.Message}");
+            LogError($"version command error: {ex.Message}");
         }
     }
 
@@ -620,6 +613,8 @@ public partial class AdminPlus : BasePlugin
 
             var onlineAdmins = new List<(string name, int imm)>();
 
+            if (!AreAdminsHiddenFromList())
+            {
             foreach (var p in players)
             {
                 bool hasAdminPerm =
@@ -633,6 +628,7 @@ public partial class AdminPlus : BasePlugin
                 adminImmunity.TryGetValue(p.SteamID, out var imm);
                 string name = SanitizeName(p.PlayerName);
                 onlineAdmins.Add((name, imm));
+            }
             }
 
             if (caller != null && caller.IsValid)
@@ -665,7 +661,7 @@ public partial class AdminPlus : BasePlugin
             if (caller != null && caller.IsValid)
                 caller.PrintToChat($"{{green}}[AdminPlus]{{default}} Failed to get admin list: {ex.Message}");
             else
-                Console.WriteLine($"[AdminPlus] Admins command error: {ex.Message}");
+                LogError($"Admins command error: {ex.Message}");
         }
     }
 
@@ -719,7 +715,7 @@ public partial class AdminPlus : BasePlugin
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[AdminPlus] Effective permission fallback error: {ex.Message}");
+            LogError($"Effective permission fallback error: {ex.Message}");
         }
 
         return false;
@@ -801,7 +797,7 @@ public partial class AdminPlus : BasePlugin
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"[AdminPlus] Cleanup write error: {ex.Message}");
+                        LogError($"Cleanup write error: {ex.Message}");
                     }
                 }
             }
@@ -839,7 +835,7 @@ public partial class AdminPlus : BasePlugin
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[AdminPlus] GetPlayersFromTeamInput error: {ex.Message}");
+            LogError($"GetPlayersFromTeamInput error: {ex.Message}");
             return new List<CCSPlayerController>();
         }
     }
@@ -936,7 +932,7 @@ public partial class AdminPlus : BasePlugin
             return;
         }
 
-        var players = Utilities.GetPlayers().Where(x => x.IsValid && !x.IsBot && x.Connected == PlayerConnectedState.PlayerConnected);
+        var players = Utilities.GetPlayers().Where(x => x.IsValid && !x.IsBot && x.Connected == PlayerConnectedState.Connected);
         
         var reportMenu = CreateMenu(Localizer["Report.Menu.SelectPlayer"]);
         if (reportMenu == null) return;
@@ -1088,7 +1084,7 @@ public partial class AdminPlus : BasePlugin
         catch (Exception ex)
         {
             reporter.PrintToChat($"{Localizer["Prefix"]} {Localizer["Report.FailedToSend"]}");
-            Console.WriteLine($"[AdminPlus] Report error: {ex.Message}");
+            LogError($"Report error: {ex.Message}");
         }
     }
 
@@ -1148,9 +1144,9 @@ public static class PlayerExtensions
             }
             catch (Exception ex)
             {
-            Console.WriteLine($"[AdminPlus] PrintToAll Error: {ex.Message}");
-            Console.WriteLine($"[AdminPlus] {message}");
+                AdminPlus.LogError($"PrintToAll error: {ex.Message}");
+                Console.WriteLine($"[AdminPlus] {message}");
+            }
         }
-    }
     
 }

@@ -255,7 +255,6 @@ public partial class AdminPlus
 
         _voteTimer = AddTimer(_voteTimeLimit, () => EndVote());
         
-        Console.WriteLine($"[AdminPlus] Starting vote countdown: {_remainingTime} seconds");
         _countdownTimer = AddTimer(1.0f, () => UpdateCountdown(), TimerFlags.REPEAT);
     }
 
@@ -307,6 +306,7 @@ public partial class AdminPlus
         }
         
         newMenu.ExitButton = true;
+        newMenu.SuppressHistoryPush = true;
         
         var players = Utilities.GetPlayers().Where(p => p != null && p.IsValid && !p.IsBot);
         foreach (var player in players)
@@ -336,6 +336,7 @@ public partial class AdminPlus
         }
         
         newMenu.ExitButton = true;
+        newMenu.SuppressHistoryPush = true;
         
         var players = Utilities.GetPlayers().Where(p => p != null && p.IsValid && !p.IsBot && !_playerVotes.ContainsKey(p));
         foreach (var player in players)
@@ -365,6 +366,7 @@ public partial class AdminPlus
         }
         
         newMenu.ExitButton = true;
+        newMenu.SuppressHistoryPush = true;
         
         var nonVoters = Utilities.GetPlayers().Where(p => p != null && p.IsValid && !p.IsBot && !_playerVotes.ContainsKey(p) && !_playersWhoClosedMenu.Contains(p));
         foreach (var player in nonVoters)
@@ -391,6 +393,7 @@ public partial class AdminPlus
         }
 
         _currentVoteMenu.ExitButton = true;
+        _currentVoteMenu.SuppressHistoryPush = true;
     }
 
     private void CreateVoteMenu(string question, List<string> options)
@@ -405,6 +408,7 @@ public partial class AdminPlus
         }
 
         _currentVoteMenu.ExitButton = true;
+        _currentVoteMenu.SuppressHistoryPush = true;
     }
 
     private void HandleVote(CCSPlayerController player, string option)
@@ -569,7 +573,7 @@ public partial class AdminPlus
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"[AdminPlus] Map change error: {ex.Message}");
+                        LogError($"Map change error: {ex.Message}");
                     }
                 });
             }
@@ -670,11 +674,10 @@ public partial class AdminPlus
             _playersWhoClosedMenu.Clear();
             _playersWhoClosedMenu.Clear();
             
-            Console.WriteLine("[AdminPlus] Vote system cleaned up.");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[AdminPlus] Error during vote cleanup: {ex.Message}");
+            LogError($"during vote cleanup: {ex.Message}");
         }
     }
     
@@ -708,7 +711,7 @@ public partial class AdminPlus
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[AdminPlus] Error closing menu for {player.PlayerName}: {ex.Message}");
+                    LogError($"closing menu for {player.PlayerName}: {ex.Message}");
                 }
             }
         }
@@ -854,6 +857,7 @@ public partial class AdminPlus
         if (playerMenu != null)
         {
             playerMenu.ExitButton = true;
+            playerMenu.SuppressHistoryPush = false;
             
             if (caller != null && caller.IsValid)
                 playerMenu.Open(caller);

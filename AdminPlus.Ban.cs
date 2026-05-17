@@ -31,11 +31,10 @@ public partial class AdminPlus
         {
             adminImmunity.Clear();
             recentSeen.Clear();
-            Console.WriteLine("[AdminPlus] Ban system cleaned up.");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[AdminPlus] Error during ban system cleanup: {ex.Message}");
+            LogError($"during ban system cleanup: {ex.Message}");
         }
     }
 
@@ -64,7 +63,6 @@ public partial class AdminPlus
         
         if (isConsoleCommand)
         {
-            Console.WriteLine("[AdminPlus] Console ban command executed.");
         }
         else
         {
@@ -272,7 +270,6 @@ public partial class AdminPlus
         
         if (isConsoleCommand)
         {
-            Console.WriteLine("[AdminPlus] Console IP ban command executed.");
         }
         else
         {
@@ -296,24 +293,18 @@ public partial class AdminPlus
         string ip = input;
         string displayName = ip;
 
-        Console.WriteLine($"[AdminPlus] IP Ban Debug - Input: {input}");
-        Console.WriteLine($"[AdminPlus] IP Ban Debug - Target found: {target != null}");
         if (target != null)
         {
-            Console.WriteLine($"[AdminPlus] IP Ban Debug - Player name: {target.PlayerName}");
-            Console.WriteLine($"[AdminPlus] IP Ban Debug - IP address: {target.IpAddress}");
         }
 
         if (target != null && !string.IsNullOrEmpty(target.IpAddress))
         {
             ip = target.IpAddress;
             displayName = SanitizeName(target.PlayerName);
-            Console.WriteLine($"[AdminPlus] IP Ban Debug - Using player IP: {ip}");
             
             if (ip.Contains(":"))
             {
                 ip = ip.Split(':')[0];
-                Console.WriteLine($"[AdminPlus] IP Ban Debug - Extracted IP without port: {ip}");
             }
         }
         else if (target == null && !Regex.IsMatch(input, @"^\d{1,3}(\.\d{1,3}){3}$"))
@@ -371,7 +362,6 @@ public partial class AdminPlus
         
         if (isConsoleCommand)
         {
-            Console.WriteLine("[AdminPlus] Console unban command executed.");
         }
         else
         {
@@ -676,10 +666,9 @@ public partial class AdminPlus
             var path = Path.Combine(Server.GameDirectory, "csgo/addons/counterstrikesharp/configs/admins.json");
             if (!File.Exists(path)) 
             {
-                Console.WriteLine($"[AdminPlus] ERROR: Admin file not found for ban sync: {path}");
+                LogError($"Admin file not found for ban sync: {path}");
                 return;
             }
-            Console.WriteLine($"[AdminPlus] Syncing bans with admin data from: {path}");
             var json = JsonDocument.Parse(File.ReadAllText(path));
             foreach (var admin in json.RootElement.EnumerateObject())
             {
@@ -785,8 +774,6 @@ public partial class AdminPlus
                 .OrderByDescending(p => StringSimilarity(p.PlayerName, input))
                 .FirstOrDefault();
 
-            Console.WriteLine($"[AdminPlus] Multiple matches found for '{input}': {string.Join(", ", matchingPlayers.Select(p => p.PlayerName))}");
-            Console.WriteLine($"[AdminPlus] Using best match: {bestMatch?.PlayerName}");
             return bestMatch;
         }
 
@@ -881,8 +868,6 @@ public partial class AdminPlus
             SteamBans.Clear();
             IpBans.Clear();
             
-            Console.WriteLine($"[AdminPlus] Clearing SteamID ban file: {BannedUserPath}");
-            Console.WriteLine($"[AdminPlus] Clearing IP ban file: {BannedIpPath}");
             File.WriteAllText(BannedUserPath, "");
             File.WriteAllText(BannedIpPath, "");
         }
@@ -909,7 +894,6 @@ public partial class AdminPlus
         {
             ipBanCount = IpBans.Count;
             IpBans.Clear();
-            Console.WriteLine($"[AdminPlus] Clearing IP ban file: {BannedIpPath}");
             File.WriteAllText(BannedIpPath, "");
         }
 
@@ -963,7 +947,7 @@ public partial class AdminPlus
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[AdminPlus] Error finding Steam ID by name: {ex.Message}");
+            LogError($"finding Steam ID by name: {ex.Message}");
         }
         
         return "";
@@ -983,7 +967,6 @@ public partial class AdminPlus
         {
             steamBanCount = SteamBans.Count;
             SteamBans.Clear();
-            Console.WriteLine($"[AdminPlus] Clearing SteamID ban file: {BannedUserPath}");
             File.WriteAllText(BannedUserPath, "");
         }
 

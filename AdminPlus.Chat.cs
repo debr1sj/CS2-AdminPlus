@@ -23,11 +23,10 @@ public partial class AdminPlus
             RemoveCommandListener("say", OnChatSayListener, HookMode.Pre);
             RemoveCommandListener("say_team", OnChatSayListener, HookMode.Pre);
             
-            Console.WriteLine("[AdminPlus] Chat system cleaned up.");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[AdminPlus] Error during chat cleanup: {ex.Message}");
+            LogError($"during chat cleanup: {ex.Message}");
         }
     }
 

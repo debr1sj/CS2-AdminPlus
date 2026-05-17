@@ -72,7 +72,7 @@ public partial class AdminPlus
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[AdminPlus] ERROR: Failed to bootstrap admin config files: {ex.Message}");
+            LogError($"Failed to bootstrap admin config files: {ex.Message}");
         }
     }
 
@@ -83,7 +83,7 @@ public partial class AdminPlus
         {
             if (!File.Exists(AdminsFile)) 
             {
-                Console.WriteLine($"[AdminPlus] ERROR: Admin file not found: {AdminsFile}");
+                LogError($"Admin file not found: {AdminsFile}");
                 return false;
             }
             Console.WriteLine($"[AdminPlus] Loading admin data from: {AdminsFile}");
@@ -103,9 +103,8 @@ public partial class AdminPlus
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[AdminPlus] ERROR: Failed to load admin data from {AdminsFile}");
-            Console.WriteLine($"[AdminPlus] ERROR: JSON parse error: {ex.Message}");
-            Console.WriteLine($"[AdminPlus] ERROR: Stack trace: {ex.StackTrace}");
+            LogError($"Failed to load admin data from {AdminsFile}");
+            LogError($"JSON parse error: {ex.Message}");
             return false;
         }
     }
@@ -131,9 +130,8 @@ public partial class AdminPlus
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[AdminPlus] ERROR: Failed to save admin data to {AdminsFile}");
-            Console.WriteLine($"[AdminPlus] ERROR: {ex.Message}");
-            Console.WriteLine($"[AdminPlus] ERROR: Stack trace: {ex.StackTrace}");
+            LogError($"Failed to save admin data to {AdminsFile}");
+            LogError($"{ex.Message}");
             if (File.Exists(AdminsFile)) File.Delete(AdminsFile);
             File.Move(tmp, AdminsFile);
         }
@@ -225,7 +223,7 @@ public partial class AdminPlus
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[AdminPlus] ERROR: Failed to resolve group for flag {flag}: {ex.Message}");
+            LogError($"Failed to resolve group for flag {flag}: {ex.Message}");
         }
 
         return null;

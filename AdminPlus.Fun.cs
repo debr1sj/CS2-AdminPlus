@@ -278,7 +278,7 @@ public partial class AdminPlus
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[AdminPlus] Error during fun cleanup: {ex.Message}");
+            LogError($"during fun cleanup: {ex.Message}");
         }
     }
 
@@ -1364,11 +1364,10 @@ public static class LastCoordExtensions
         try
         {
             _lastCoords.Clear();
-            Console.WriteLine("[AdminPlus] LastCoords cleaned up.");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[AdminPlus] Error during LastCoords cleanup: {ex.Message}");
+            AdminPlus.LogError($"LastCoords cleanup: {ex.Message}");
         }
     }
 }

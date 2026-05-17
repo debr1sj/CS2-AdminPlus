@@ -1,4 +1,4 @@
-﻿using CounterStrikeSharp.API;
+using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Admin;
@@ -34,7 +34,7 @@ public partial class AdminPlus
     private readonly HashSet<string> _allowedChatCommands = new(StringComparer.OrdinalIgnoreCase)
     {
         "rtv", "nominate", "timeleft", "rank", "top", "help", "rules",
-        "admins", "menu", "rs", "ws", "wp", "knife", "glove", "agent",
+        "admins", "hideadmin", "admin", "adminmenu", "banlist", "menu", "rs", "ws", "wp", "knife", "glove", "agent",
         "kf", "ajan", "report", "calladmin", "spec", "join", "jointeam",
         "version", "css_version"
     };
@@ -142,7 +142,6 @@ public partial class AdminPlus
         {
             if (File.Exists(CommunicationDataPath))
             {
-                Console.WriteLine($"[AdminPlus] Loading communication data from: {CommunicationDataPath}");
                 var json = File.ReadAllText(CommunicationDataPath);
                 var allPunishments = JsonSerializer.Deserialize<List<CommunicationPunishment>>(json) ?? new List<CommunicationPunishment>();
 
@@ -154,18 +153,14 @@ public partial class AdminPlus
                 if (expiredCount > 0)
                 {
                     SaveCommunicationData();
-                    Console.WriteLine($"[AdminPlus] {expiredCount} expired punishments cleaned and file updated.");
                 }
 
-                Console.WriteLine($"[AdminPlus] Loaded {_communicationPunishments.Count} active communication punishments");
                 _lastCommDataWriteUtc = File.GetLastWriteTimeUtc(CommunicationDataPath);
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[AdminPlus] ERROR: Failed to load communication data from {CommunicationDataPath}");
-            Console.WriteLine($"[AdminPlus] ERROR: {ex.Message}");
-            Console.WriteLine($"[AdminPlus] ERROR: Stack trace: {ex.StackTrace}");
+            LogError($"{ex.Message}");
         }
     }
 
@@ -216,7 +211,7 @@ public partial class AdminPlus
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[AdminPlus] Error in SyncMuteSystemsFromJson: {ex.Message}");
+            LogError($"in SyncMuteSystemsFromJson: {ex.Message}");
         }
     }
 
@@ -227,7 +222,6 @@ public partial class AdminPlus
     {
         try
         {
-            Console.WriteLine($"[AdminPlus] Saving communication data to: {CommunicationDataPath}");
             var options = new JsonSerializerOptions { WriteIndented = true };
             var json = JsonSerializer.Serialize(_communicationPunishments, options);
             File.WriteAllText(CommunicationDataPath, json);
@@ -235,9 +229,7 @@ public partial class AdminPlus
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[AdminPlus] ERROR: Failed to save communication data to {CommunicationDataPath}");
-            Console.WriteLine($"[AdminPlus] ERROR: {ex.Message}");
-            Console.WriteLine($"[AdminPlus] ERROR: Stack trace: {ex.StackTrace}");
+            LogError($"{ex.Message}");
         }
     }
 
@@ -294,7 +286,7 @@ public partial class AdminPlus
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[AdminPlus] Error in EnforceMutePunishments: {ex.Message}");
+            LogError($"in EnforceMutePunishments: {ex.Message}");
         }
     }
 
@@ -320,7 +312,6 @@ public partial class AdminPlus
                             player.VoiceFlags = VoiceFlags.Normal;
                         }
                         
-                        Console.WriteLine($"[AdminPlus] Expired {punishment.Type} punishment removed: {punishment.PlayerName} (SteamID: {punishment.SteamID})");
                     }
 
                     _communicationPunishments.RemoveAt(i);
@@ -332,7 +323,6 @@ public partial class AdminPlus
             {
                 SaveCommunicationData();
                 SyncMuteSystemsFromJson();
-                Console.WriteLine($"[AdminPlus] Total {removedCount} expired punishments removed and file updated.");
             }
             else
             {
@@ -341,7 +331,7 @@ public partial class AdminPlus
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[AdminPlus] Error in CheckExpiredPunishments: {ex.Message}");
+            LogError($"in CheckExpiredPunishments: {ex.Message}");
         }
     }
 
@@ -371,7 +361,6 @@ public partial class AdminPlus
         
         if (removedCount > 0)
         {
-            Console.WriteLine($"[AdminPlus] {type} punishment removed and file updated. SteamID: {steamId}");
             
             if (punishment != null)
             {
@@ -788,6 +777,8 @@ public partial class AdminPlus
             return HookResult.Continue;
 
         var chatText = info.GetArg(1) ?? "";
+        if (HandleSuppressedPluginChatCommand(player, chatText))
+            return HookResult.Handled;
         if (TryHandlePublicVersionChatCommand(player, chatText))
             return HookResult.Handled;
 
@@ -1012,11 +1003,10 @@ public partial class AdminPlus
             RemoveCommandListener("say", OnPlayerSay, HookMode.Pre);
             RemoveCommandListener("say_team", OnPlayerSay, HookMode.Pre);
             
-            Console.WriteLine("[AdminPlus] Communication system cleaned up.");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[AdminPlus] Error during communication cleanup: {ex.Message}");
+            LogError($"during communication cleanup: {ex.Message}");
         }
     }
 

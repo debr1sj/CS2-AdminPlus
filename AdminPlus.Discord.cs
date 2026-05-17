@@ -32,7 +32,7 @@ public static class Discord
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[AdminPlus] Discord HttpClient dispose error: {ex.Message}");
+            AdminPlus.LogError($"Discord HttpClient dispose error: {ex.Message}");
         }
     }
 
@@ -60,7 +60,7 @@ public static class Discord
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[AdminPlus] Discord status timer error: {ex.Message}");
+                AdminPlus.LogError($"Discord status timer error: {ex.Message}");
             }
         }, TimerFlags.REPEAT);
     }
@@ -74,7 +74,7 @@ public static class Discord
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[AdminPlus] Discord status timer stop error: {ex.Message}");
+            AdminPlus.LogError($"Discord status timer stop error: {ex.Message}");
         }
     }
 
@@ -85,7 +85,6 @@ public static class Discord
         DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
     };
 
-    private static string CloudflareWorkerUrl = "https://adminplus-discord.ed1xby.workers.dev";
     private static string BanWebhook = "";
     private static string AdminActionsWebhook = "";
     private static string CommunicationWebhook = "";
@@ -127,13 +126,13 @@ public static class Discord
                 }
                 else
                 {
-                    Console.WriteLine($"[AdminPlus] DiscordWebhooks config is null!");
+                    AdminPlus.LogWarn("DiscordWebhooks section is empty in adminplus-discord.json");
                 }
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[AdminPlus] Config load error: {ex.Message}");
+            AdminPlus.LogError($"Config load error: {ex.Message}");
         }
     }
 
@@ -164,9 +163,7 @@ public static class Discord
             });
             
             File.WriteAllText(configFile, json);
-            Console.WriteLine($"[AdminPlus] Created Discord config file: {configFile}");
-            Console.WriteLine($"[AdminPlus] Config file created successfully!");
-            Console.WriteLine($"[AdminPlus] Please edit the config file and add your Discord webhook URLs");
+            AdminPlus.LogWarn($"Created adminplus-discord.json — add your webhook URLs.");
         }
         catch (Exception)
         {
@@ -475,12 +472,13 @@ public static class Discord
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[AdminPlus] Error getting player lists: {ex.Message}");
+            AdminPlus.LogError($"Discord player list error: {ex.Message}");
         }
 
         var onlineAdmins = 0;
         try
         {
+            if (!AdminPlus.AreAdminsHiddenFromList())
             foreach (var player in Utilities.GetPlayers().Where(p => p.IsValid && !p.IsBot))
             {
                 if (plugin.HasEffectivePermission(player, "@css/root") ||
@@ -493,7 +491,7 @@ public static class Discord
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[AdminPlus] Error counting admins: {ex.Message}");
+            AdminPlus.LogError($"Discord admin count error: {ex.Message}");
         }
 
         var ctNames = ctPlayers.Count > 0 ? string.Join("\n", ctPlayers.Select(p => $"```ansi\n\u001b[0;34m🔵 {p}\u001b[0m\n```")) : $"```ansi\n\u001b[0;34m🔵 {plugin.Localizer["Discord.ServerStatus.Empty"].Value}\u001b[0m\n```";
@@ -508,12 +506,10 @@ public static class Discord
             if (hostnameConVar != null && !string.IsNullOrEmpty(hostnameConVar.StringValue))
             {
                 serverHostname = hostnameConVar.StringValue;
-                Console.WriteLine($"[AdminPlus] Hostname found: {serverHostname}");
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"[AdminPlus] Hostname detection error: {ex.Message}");
         }
         
         var embedObject = new
@@ -850,16 +846,14 @@ public static class Discord
             string responseContent = await response.Content.ReadAsStringAsync();
 
             if (response.IsSuccessStatusCode)
-            {
                 return true;
-            }
-            else
-            {
-                return false;
-            }
+
+            Console.WriteLine($"[AdminPlus] Discord webhook failed ({response.StatusCode}): {responseContent}");
+            return false;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            AdminPlus.LogError($"Discord webhook error: {ex.Message}");
             return false;
         }
     }
@@ -867,53 +861,10 @@ public static class Discord
     private static async Task SendMessageWithFallback(string webhookType, object embedData)
     {
         var webhookUrl = GetWebhookUrl(webhookType);
-        
-        bool directSuccess = await SendDirectToDiscord(webhookUrl, embedData);
-        
-        if (!directSuccess)
-        {
-            Console.WriteLine($"[AdminPlus] Direct webhook failed, trying Cloudflare Worker...");
-            await SendViaCloudflareWorker(webhookType, embedData);
-        }
-    }
-
-    private static async Task SendViaCloudflareWorker(string webhookType, object embedData)
-    {
-        if (string.IsNullOrWhiteSpace(CloudflareWorkerUrl))
-        {
-            Console.WriteLine($"[AdminPlus] Cloudflare Worker URL not configured");
+        if (string.IsNullOrWhiteSpace(webhookUrl))
             return;
-        }
 
-        try
-        {
-            var payload = new
-            {
-                webhookUrl = GetWebhookUrl(webhookType),
-                webhookType = webhookType,
-                embedData = embedData
-            };
-
-            string jsonString = JsonSerializer.Serialize(payload, JsonOptions);
-            Console.WriteLine($"[AdminPlus] Sending payload to Cloudflare Worker: {jsonString}");
-            using StringContent stringContent = new(jsonString, Encoding.UTF8, "application/json");
-
-            using HttpResponseMessage response = await _httpClient.PostAsync(CloudflareWorkerUrl, stringContent).ConfigureAwait(false);
-            string responseContent = await response.Content.ReadAsStringAsync();
-
-            if (!response.IsSuccessStatusCode)
-            {
-                Console.WriteLine($"[AdminPlus] Cloudflare Worker HTTP error: {response.StatusCode} - {responseContent}");
-            }
-            else
-            {
-                Console.WriteLine($"[AdminPlus] Message sent via Cloudflare Worker successfully");
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[AdminPlus] Cloudflare Worker error: {ex.Message}");
-        }
+        await SendDirectToDiscord(webhookUrl, embedData);
     }
 
     public static void RegisterDiscordCommands(AdminPlus plugin)

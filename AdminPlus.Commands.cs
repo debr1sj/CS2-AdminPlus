@@ -36,11 +36,10 @@ public partial class AdminPlus
         try
         {
             InstalledMaps.Clear();
-            Console.WriteLine("[AdminPlus] Commands system cleaned up.");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[AdminPlus] Error during commands cleanup: {ex.Message}");
+            LogError($"during commands cleanup: {ex.Message}");
         }
     }
 
@@ -58,7 +57,7 @@ public partial class AdminPlus
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[AdminPlus] Error loading maps: {ex.Message}");
+            LogError($"loading maps: {ex.Message}");
         }
     }
 
@@ -68,6 +67,7 @@ public partial class AdminPlus
 
         AddCommand("kick", Localizer["Kick.Usage"], CmdKick);
         AddCommand("map", Localizer["Map.Usage"], CmdChangeMap);
+        AddCommand("css_map", Localizer["Map.Usage"], CmdChangeMapClientOnly);
         AddCommand("wsmap", Localizer["Map.Usage"], CmdChangeWorkshopMap);
         AddCommand("workshop", Localizer["Map.Usage"], CmdChangeWorkshopMap);
         AddCommand("rcon", Localizer["Rcon.Usage"], CmdRcon);
@@ -98,20 +98,15 @@ public partial class AdminPlus
 
         foreach (var alias in MapAliases.Keys)
         {
+            _pluginChatCommands.Add(alias);
             AddCommand(alias, $"Change map alias: {alias}", (caller, info) =>
             {
-                if (caller == null)
-                {
-                    Console.WriteLine($"[AdminPlus] Map alias '{alias}' can only be used by players, not from console.");
-                    return;
-                }
-                
-                if (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic"))
+                if (caller != null && (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic")))
                 {
                     caller.Print(Localizer["NoPermission"]);
                     return;
                 }
-                
+
                 ForceChangeMap(caller, MapAliases[alias]);
             });
         }
@@ -123,7 +118,6 @@ public partial class AdminPlus
         
         if (isConsoleCommand)
         {
-            Console.WriteLine("[AdminPlus] Console kick command executed.");
         }
         else
         {
@@ -170,7 +164,6 @@ public partial class AdminPlus
         PlayerExtensions.PrintToAll(Localizer["Player.Kick.Success", executorName, EscapeForStringFormat(targetName), reason]);
 
         if (caller == null)
-            Console.WriteLine($"[AdminPlus] Panel player kicked: {targetName} (Reason: {reason})");
 
         AddTimer(0.1f, () => {
             _ = Discord.SendAdminActionLog("kick", targetName, target.SteamID, executorName, caller?.SteamID ?? 0, reason, this);
@@ -308,7 +301,6 @@ public partial class AdminPlus
         
         if (isConsoleCommand)
         {
-            Console.WriteLine("[AdminPlus] Console slay command executed.");
         }
         else
         {
@@ -441,7 +433,6 @@ public partial class AdminPlus
         
         if (isConsoleCommand)
         {
-            Console.WriteLine("[AdminPlus] Console money command executed.");
         }
         else
         {
@@ -569,7 +560,6 @@ public partial class AdminPlus
         
         if (isConsoleCommand)
         {
-            Console.WriteLine("[AdminPlus] Console armor command executed.");
         }
         else
         {
@@ -791,19 +781,11 @@ public partial class AdminPlus
         {
             PlayerExtensions.PrintToAll(Localizer["Team.Kick.Success", executorName, teamName, reason]);
             PlayerExtensions.PrintToAll(Localizer["Team.Kick.PlayerCount", kickedCount]);
-
-            if (caller == null)
-                Console.WriteLine($"[AdminPlus] Panel {kickedCount} players kicked from {teamName} team: (Reason: {reason})");
         }
     }
 
     private void HandleTeamMoney(CCSPlayerController? caller, List<CCSPlayerController> teamPlayers, string teamInput, int moneyAmount)
     {
-        if (caller == null)
-        {
-            Console.WriteLine("[AdminPlus] Panel team money command executed.");
-        }
-
         if (teamPlayers.Count == 0)
         {
             SendErrorMessage(caller, "Error.NoPlayersInTeam", $"No players found in {GetTeamName(teamInput)} team.");
@@ -847,19 +829,11 @@ public partial class AdminPlus
         {
             PlayerExtensions.PrintToAll(Localizer["Team.Money.Success", executorName, teamName, moneyAmount]);
             PlayerExtensions.PrintToAll(Localizer["Team.Money.PlayerCount", affectedCount]);
-
-            if (caller == null)
-                Console.WriteLine($"[AdminPlus] Panel {affectedCount} players from {teamName} team received money: {moneyAmount}");
         }
     }
 
     private void HandleTeamArmor(CCSPlayerController? caller, List<CCSPlayerController> teamPlayers, string teamInput, int armorAmount)
     {
-        if (caller == null)
-        {
-            Console.WriteLine("[AdminPlus] Panel team armor command executed.");
-        }
-
         if (teamPlayers.Count == 0)
         {
             SendErrorMessage(caller, "Error.NoPlayersInTeam", $"No players found in {GetTeamName(teamInput)} team.");
@@ -911,25 +885,25 @@ public partial class AdminPlus
         {
             PlayerExtensions.PrintToAll(Localizer["Team.Armor.Success", executorName, teamName, armorAmount]);
             PlayerExtensions.PrintToAll(Localizer["Team.Armor.PlayerCount", affectedCount]);
-
-            if (caller == null)
-                Console.WriteLine($"[AdminPlus] Panel {affectedCount} players from {teamName} team received armor: {armorAmount}");
         }
+    }
+
+    private void CmdChangeMapClientOnly(CCSPlayerController? caller, CommandInfo info)
+    {
+        if (caller == null)
+        {
+            Console.WriteLine("[AdminPlus] css_map is disabled on the server console. Use it from an in-game admin client console.");
+            return;
+        }
+
+        CmdChangeMap(caller, info);
     }
 
     private void CmdChangeMap(CCSPlayerController? caller, CommandInfo info)
     {
-        bool isConsoleCommand = caller == null;
-        
-        if (isConsoleCommand)
+        if (caller != null && (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic")))
         {
-            Console.WriteLine("[AdminPlus] Map command can only be used by players, not from console.");
-            return;
-        }
-        
-        if (caller == null || !caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic"))
-        {
-            caller?.Print(Localizer["NoPermission"]);
+            caller.Print(Localizer["NoPermission"]);
             return;
         }
 
@@ -948,11 +922,7 @@ public partial class AdminPlus
 
     private void CmdChangeWorkshopMap(CCSPlayerController? caller, CommandInfo info)
     {
-        if (caller == null)
-        {
-            Console.WriteLine("[AdminPlus] Panel workshop map change command executed.");
-        }
-        else if (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic"))
+        if (caller != null && (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic")))
         {
             if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
             return;
@@ -974,18 +944,11 @@ public partial class AdminPlus
         string executorName = GetExecutorNameCommand(caller);
         PlayerExtensions.PrintToAll(Localizer["Map.WorkshopChanged", executorName, workshopId]);
         Server.ExecuteCommand($"host_workshop_map {workshopId}");
-
-        if (caller == null)
-            Console.WriteLine($"[AdminPlus] Panel workshop map changed: {workshopId}");
     }
 
     private void CmdRcon(CCSPlayerController? caller, CommandInfo info)
     {
-        if (caller == null)
-        {
-            Console.WriteLine("[AdminPlus] Panel RCON command executed.");
-        }
-        else if (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/root"))
+        if (caller != null && (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/root")))
         {
             if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
             return;
@@ -1004,17 +967,11 @@ public partial class AdminPlus
 
         if (caller != null && caller.IsValid)
             caller.Print(Localizer["Rcon.Sent", executorName, cmd]);
-        else
-            Console.WriteLine($"[AdminPlus] Panel RCON command executed: {cmd}");
     }
 
     private void CmdCvar(CCSPlayerController? caller, CommandInfo info)
     {
-        if (caller == null)
-        {
-            Console.WriteLine("[AdminPlus] Panel Cvar command executed.");
-        }
-        else if (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic"))
+        if (caller != null && (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic")))
         {
             if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
             return;
@@ -1070,11 +1027,7 @@ public partial class AdminPlus
 
     private void CmdWho(CCSPlayerController? caller, CommandInfo info)
     {
-        if (caller == null)
-        {
-            Console.WriteLine("[AdminPlus] Who komutu çalıştırıldı.");
-        }
-        else if (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic"))
+        if (caller != null && (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic")))
         {
             if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
             return;
@@ -1101,11 +1054,7 @@ public partial class AdminPlus
 
     private void CmdRestartRound(CCSPlayerController? caller, CommandInfo info)
     {
-        if (caller == null)
-        {
-            Console.WriteLine("[AdminPlus] Panel round restart command executed.");
-        }
-        else if (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic"))
+        if (caller != null && (!caller.IsValid || !AdminManager.PlayerHasPermissions(caller, "@css/generic")))
         {
             if (caller.IsValid) caller.Print(Localizer["NoPermission"]);
             return;
@@ -1115,9 +1064,6 @@ public partial class AdminPlus
 
         string executorName = GetExecutorNameCommand(caller);
         PlayerExtensions.PrintToAll(Localizer["Round.Restarted", executorName]);
-
-        if (caller == null)
-            Console.WriteLine("[AdminPlus] Panel round restarted.");
     }
 
     private void CmdPlayers(CCSPlayerController? caller, CommandInfo info)
@@ -1166,7 +1112,7 @@ public partial class AdminPlus
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[AdminPlus] Map change error: {ex.Message}");
+                LogError($"Map change error: {ex.Message}");
                 SendErrorMessage(caller, "Map.ChangeError", $"Map change error: {targetMap}", targetMap);
             }
         });
