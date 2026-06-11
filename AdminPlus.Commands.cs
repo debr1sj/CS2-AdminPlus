@@ -66,7 +66,7 @@ public partial class AdminPlus
         LoadInstalledMaps();
 
         AddCommand("kick", Localizer["Kick.Usage"], CmdKick);
-        AddCommand("map", Localizer["Map.Usage"], CmdChangeMap);
+        // Avoid intercepting the engine/server startup command, e.g. "+map de_cache".
         AddCommand("css_map", Localizer["Map.Usage"], CmdChangeMapClientOnly);
         AddCommand("wsmap", Localizer["Map.Usage"], CmdChangeWorkshopMap);
         AddCommand("workshop", Localizer["Map.Usage"], CmdChangeWorkshopMap);
