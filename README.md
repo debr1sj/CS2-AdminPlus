@@ -17,7 +17,7 @@ Advanced CounterStrikeSharp admin plugin with comprehensive features: ban/kick s
 - 📢 **Chat Commands**: Admin say, center say, HUD messages
 - 🔒 **Reservation System**: Admin priority slots and player management
 - 📊 **Report System**: Player-to-player reporting with Discord integration  
-- 🌍 **Multi-language**: English, Turkish, French, Russian, German, and Brazilian Portuguese support
+- 🌍 **Multi-language**: English, Turkish, French, Russian, German, Polish, Brazilian Portuguese, and Simplified Chinese support
 - 📝 **Advanced Logging**: All actions logged to files and 7 different Discord webhook channels
 - 🔗 **Discord Integration**: Server status, ban logs, admin commands, communication logs, connection tracking, chat logs, and report system
 - 🔔 **Smart Notifications**: Intelligent admin alerts based on action importance and type
@@ -317,7 +317,7 @@ The plugin features a powerful built-in menu system, accessible via `css_admin`:
 
 ## 🌍 Localization
 
-The plugin currently supports **English**, **Turkish**, **French**, **Russian**, **German**, and **Brazilian Portuguese** languages with customizable messages through translation files.
+The plugin currently supports **English**, **Turkish**, **French**, **Russian**, **German**, **Polish**, **Brazilian Portuguese**, and **Simplified Chinese** languages with customizable messages through translation files.
 
 ### 🌍 Multi-language Support
 
@@ -327,7 +327,11 @@ Current language support:
 - 🇫🇷 **French** - Full translation with modern color-coded messages (Thanks to felyjyn) ✅
 - 🇷🇺 **Russian** - Full translation with modern color-coded messages added in v1.0.3 ✅
 - 🇩🇪 **German** - Full translation with modern color-coded messages added in v1.0.3 ✅
+- 🇵🇱 **Polish** - Full translation ✅
 - 🇧🇷 **Brazilian Portuguese** - Full translation added in v1.0.4 ✅
+- 🇨🇳 **Simplified Chinese** - Full translation (`lang/zh-CN.json`) ✅
+
+> On Linux, CounterStrikeSharp may expose Simplified Chinese as `zh-Hans-CN` through .NET's culture list. If `ServerLanguage: "zh-CN"` is rejected by the core, set it to `"zh-Hans-CN"` in `csgo/addons/counterstrikesharp/configs/core.json`. AdminPlus includes both `zh-CN.json` and the `zh-Hans-CN.json` compatibility alias.
 
 ### 🚀 More Languages Coming Soon!
 
@@ -336,9 +340,7 @@ We're working on adding support for additional languages:
 - 🇦🇷 Arabic (العربية)
 - 🇮🇷 Farsi (فارسی)
 - 🇱🇻 Latvian (Latviešu)
-- 🇵🇱 Polish (Polski)
 - 🇵🇹 Portuguese (Português)
-- 🇨🇳 Chinese (Simplified) (中文简体)
 
 ### 🤝 Contribute Translations
 
