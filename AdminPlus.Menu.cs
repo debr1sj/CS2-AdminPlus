@@ -586,7 +586,9 @@ public partial class AdminPlus
         var menu = CreateMenu(Localizer["Menu.AdminAdd.ChooseGroup"]);
         if (menu == null) return;
 
-        var groups = new[] { "#css/root", "#css/admin", "#css/mod", "#css/vip" };
+        var groups = ReadDefinedAdminGroups().ToList();
+        groups.Insert(0, "@css/root");
+
         foreach (var group in groups)
         {
             menu.AddMenuOption(group, (ply, opt) =>
@@ -651,33 +653,24 @@ public partial class AdminPlus
             }
 
             if (!ReadAdminsFile(out var root)) root = new JsonObject();
-            if (root.ContainsKey(steamId))
-            {
-                if (ulong.TryParse(steamId, out var steam64))
-                {
-                    var steamId3 = ConvertToSteamID3(steam64);
-                    admin.Print(Localizer["Admin.Exists", $"{playerName} {steamId3}"]);
-                }
-                else
-                {
-                    admin.Print(Localizer["Admin.Exists", $"{playerName} {steamId}"]);
-                }
-                return;
-            }
-
-            var obj = new JsonObject
-            {
-                ["identity"] = steamId,
-                ["name"] = playerName,
-                ["immunity"] = immunity,
-                ["groups"] = new JsonArray(group)
-            };
-
+            var updated = root[steamId] is JsonObject;
+            var obj = root[steamId] as JsonObject ?? new JsonObject();
+            obj["identity"] = steamId;
+            obj["name"] = playerName;
+            obj["immunity"] = immunity;
+            obj.Remove("groups");
+            obj.Remove("flags");
+            if (group.StartsWith("@", StringComparison.Ordinal))
+                obj["flags"] = new JsonArray(group);
+            else
+                obj["groups"] = new JsonArray(group);
             root[steamId] = obj;
             WriteAdminsFile(root);
             LoadImmunity();
+            var target = Utilities.GetPlayers().FirstOrDefault(p => p != null && p.IsValid && p.SteamID.ToString() == steamId);
+            ApplyRuntimeAdminData(target, group, immunity);
 
-            admin.Print(Localizer["Admin.Added", playerName, group, immunity]);
+            admin.Print(Localizer[updated ? "Admin.Updated" : "Admin.Added", playerName, ConvertToSteamID3(ulong.Parse(steamId)), group, immunity]);
         });
 
         menu.AddMenuOption(Localizer["Menu.ConfirmNo"], (ply, opt) => ShowAdminManageMenu(admin));

@@ -366,6 +366,13 @@ The plugin uses CounterStrikeSharp's permission system:
 - `@css/unban` - Unban commands
 - `@css/reservation` - Reservation system access
 
+Admin entries use either direct flags or groups:
+
+- `@css/root` is a permission flag and can be placed directly in `admins.json`.
+- `#css/admin` is a group name and is valid only when the same key exists in `admin_groups.json`.
+- The `!admin` menu now lists groups from `admin_groups.json` and includes a direct `@css/root` option. Selecting an existing player updates their assignment instead of reporting a no-op.
+- Changes are applied to an online player immediately and persisted to `admins.json`; reconnect the player or reload the CounterStrikeSharp admin data for other plugins to observe a file-only change.
+
 ## 📝 Logging
 
 All admin actions are logged to:

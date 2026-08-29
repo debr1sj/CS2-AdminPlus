@@ -31,7 +31,7 @@ namespace AdminPlus;
 public partial class AdminPlus : BasePlugin
 {
     public override string ModuleName => "AdminPlus";
-    public override string ModuleVersion => "1.0.8";
+    public override string ModuleVersion => "1.0.9";
     public override string ModuleAuthor => "Debr1sj";
 
     internal static string BannedUserPath = string.Empty;
