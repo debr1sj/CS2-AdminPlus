@@ -31,7 +31,7 @@ namespace AdminPlus;
 public partial class AdminPlus : BasePlugin
 {
     public override string ModuleName => "AdminPlus";
-    public override string ModuleVersion => "1.0.9";
+    public override string ModuleVersion => "1.0.11";
     public override string ModuleAuthor => "Debr1sj";
 
     internal static string BannedUserPath = string.Empty;
@@ -133,6 +133,10 @@ public partial class AdminPlus : BasePlugin
         
         RegisterReportCommands();
         RegisterListener<Listeners.OnTick>(OnInternalMenuTick);
+        RegisterListener<Listeners.OnServerPreEntityThink>(OnInternalMenuPreEntityThink);
+        RegisterEventHandler<EventBotTakeover>(OnInternalMenuBotTakeover);
+        RegisterEventHandler<EventRoundPrestart>(OnInternalMenuRoundPrestart);
+        RegisterEventHandler<EventPlayerSpawn>(OnInternalMenuPlayerSpawn, HookMode.Pre);
         AddCommandListener("say", OnInternalMenuSay, HookMode.Pre);
         AddCommandListener("say_team", OnInternalMenuSay, HookMode.Pre);
 

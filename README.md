@@ -395,7 +395,13 @@ Quick map access with aliases:
 
 ## 📋 Changelog
 
-### 🔧 Version 1.0.8 (Latest)
+### 🔧 Version 1.0.11 (Latest)
+- **Menu**: closes on round restart and respawn so spawn teleport is not blocked.
+
+### 🔧 Version 1.0.10
+- **Menu**: opening a menu holds the player in place, including a possessed bot. Look stays free.
+
+### 🔧 Version 1.0.8
 - **Compatibility**: CounterStrikeSharp API updated to `1.0.368`
 - **Menu system**
   - Menu input handling aligned with MenuManager-style snapshot + `HasFlag` detection (fixes **R** not closing the menu)
