@@ -4,6 +4,7 @@ using CounterStrikeSharp.API.Modules.Admin;
 using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Utils;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -229,6 +230,61 @@ public partial class AdminPlus
         return null;
     }
 
+    private static IReadOnlyList<string> ReadDefinedAdminGroups()
+    {
+        try
+        {
+            if (!File.Exists(AdminGroupsFile))
+                return Array.Empty<string>();
+
+            var node = JsonNode.Parse(File.ReadAllText(AdminGroupsFile, Encoding.UTF8)) as JsonObject;
+            if (node == null)
+                return Array.Empty<string>();
+
+            return node
+                .Where(kv => kv.Value is JsonObject && kv.Key.StartsWith("#", StringComparison.Ordinal))
+                .Select(kv => kv.Key)
+                .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+        }
+        catch (Exception ex)
+        {
+            LogError($"Failed to read admin groups: {ex.Message}");
+            return Array.Empty<string>();
+        }
+    }
+
+    private static bool IsDefinedAdminGroup(string group)
+        => ReadDefinedAdminGroups().Contains(group, StringComparer.OrdinalIgnoreCase);
+
+    private static void ApplyRuntimeAdminData(CCSPlayerController? target, string assignment, int immunity)
+    {
+        if (target == null || !target.IsValid)
+            return;
+
+        try
+        {
+            AdminManager.RemovePlayerAdminData(target);
+
+            if (assignment.StartsWith("@", StringComparison.Ordinal))
+                AdminManager.AddPlayerPermissions(target, assignment);
+            else
+                AdminManager.AddPlayerToGroup(target, assignment);
+
+            AdminManager.SetPlayerImmunity(target, (uint)Math.Max(0, immunity));
+        }
+        catch (Exception ex)
+        {
+            LogError($"Failed to apply runtime permissions for {target.SteamID}: {ex.Message}");
+        }
+    }
+
+    private static string NormalizeAdminAssignment(string input, out bool isFlag)
+    {
+        isFlag = input.TrimStart().StartsWith("@", StringComparison.Ordinal);
+        return isFlag ? NormalizeAdminFlag(input) : NormalizeAdminGroup(input);
+    }
+
     private string GetExecutorNameAdmin(CCSPlayerController? caller)
     {
         return (caller == null || !caller.IsValid) ? Localizer["Console"] : caller.PlayerName;
@@ -282,10 +338,12 @@ public partial class AdminPlus
 
         var idRaw = info.GetArg(1);
         var groupArg = info.GetArg(2);
-        bool isFlagInput = groupArg.TrimStart().StartsWith("@");
-        var normalizedGroup = NormalizeAdminGroup(groupArg);
-        var normalizedFlag = NormalizeAdminFlag(groupArg);
-        var resolvedGroup = isFlagInput ? ResolveGroupForFlag(normalizedFlag) : null;
+        var assignment = NormalizeAdminAssignment(groupArg, out var isFlagInput);
+        if (!isFlagInput && !IsDefinedAdminGroup(assignment))
+        {
+            SendErrorMessageAdmin(caller, "Admin.GroupNotFound", $"Admin group not found: {assignment}", assignment);
+            return;
+        }
         if (!int.TryParse(info.GetArg(3), out var immunity)) immunity = 0;
 
         if (!TryParseSteam64(idRaw, out var s64) || s64 == 0)
@@ -306,44 +364,32 @@ public partial class AdminPlus
 
         var steamId3 = ConvertToSteamID3(s64);
 
-        if (root.ContainsKey(key))
-        {
-            if (caller != null && caller.IsValid)
-                caller.Print(Localizer["Admin.Exists", $"{playerName} {steamId3}"]);
-            else
-                Console.WriteLine($"[AdminPlus] This admin already exists: {playerName} {steamId3}");
-            return;
-        }
-
-        var obj = new JsonObject
-        {
-            ["identity"] = key,
-            ["name"] = playerName,
-            ["immunity"] = immunity
-        };
-        if (isFlagInput && !string.IsNullOrWhiteSpace(resolvedGroup))
-        {
-            obj["groups"] = new JsonArray(resolvedGroup);
-        }
-        else if (isFlagInput)
-        {
-            obj["flags"] = new JsonArray(normalizedFlag);
-        }
+        var updated = root[key] is JsonObject;
+        var obj = root[key] as JsonObject ?? new JsonObject();
+        obj["identity"] = key;
+        if (target != null)
+            obj["name"] = playerName;
+        else if (obj["name"] == null)
+            obj["name"] = playerName;
+        obj["immunity"] = immunity;
+        obj.Remove("groups");
+        obj.Remove("flags");
+        if (isFlagInput)
+            obj["flags"] = new JsonArray(assignment);
         else
-        {
-            obj["groups"] = new JsonArray(normalizedGroup);
-        }
+            obj["groups"] = new JsonArray(assignment);
 
         root[key] = obj;
         WriteAdminsFile(root);
         LoadImmunity();
+        ApplyRuntimeAdminData(target, assignment, immunity);
 
         string executorName = GetExecutorNameAdmin(caller);
-        
+        var displayAssignment = assignment;
         if (caller != null && caller.IsValid)
-            caller.Print(Localizer["Admin.Added", playerName, steamId3, (isFlagInput && !string.IsNullOrWhiteSpace(resolvedGroup)) ? resolvedGroup : (isFlagInput ? normalizedFlag : normalizedGroup), immunity]);
+            caller.Print(Localizer[updated ? "Admin.Updated" : "Admin.Added", playerName, steamId3, displayAssignment, immunity]);
         else
-            Console.WriteLine(Localizer["Admin.Add.Console", playerName, steamId3, (isFlagInput && !string.IsNullOrWhiteSpace(resolvedGroup)) ? resolvedGroup : (isFlagInput ? normalizedFlag : normalizedGroup), immunity]);
+            Console.WriteLine(Localizer[updated ? "Admin.Update.Console" : "Admin.Add.Console", playerName, steamId3, displayAssignment, immunity]);
     }
 
     private void CmdRemoveAdmin(CCSPlayerController? caller, CommandInfo info)

@@ -1,6 +1,7 @@
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Commands;
+using CounterStrikeSharp.API.Modules.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -175,7 +176,8 @@ public partial class AdminPlus
     private static readonly TimeSpan MenuInputDebounce = TimeSpan.FromMilliseconds(120);
 
     private static readonly Dictionary<int, AdminPlusMenuState> _menuStates = new();
-    private static readonly Dictionary<int, float> _savedSpeed = new();
+    private static readonly Dictionary<int, Dictionary<uint, FrozenPawnState>> _savedMenuFreeze = new();
+    private static readonly Dictionary<int, int> _possessedBotSlot = new();
     private static readonly HashSet<int> _frozenSlots = [];
     private static readonly AdminPlusMenuRuntimeConfig _menuConfig = new();
     private static CCSPlayerController? _menuSelectionCaller;
@@ -269,7 +271,34 @@ public partial class AdminPlus
     {
         _menuStates.Remove(slot);
         _frozenSlots.Remove(slot);
-        _savedSpeed.Remove(slot);
+        _savedMenuFreeze.Remove(slot);
+        _possessedBotSlot.Remove(slot);
+        foreach (var pair in _possessedBotSlot.Where(p => p.Value == slot).Select(p => p.Key).ToList())
+            _possessedBotSlot.Remove(pair);
+    }
+
+    private HookResult OnInternalMenuRoundPrestart(EventRoundPrestart ev, GameEventInfo info)
+    {
+        CloseAllMenus();
+        return HookResult.Continue;
+    }
+
+    private HookResult OnInternalMenuPlayerSpawn(EventPlayerSpawn ev, GameEventInfo info)
+    {
+        var player = ev.Userid;
+        if (player is { IsValid: true })
+            CloseMenu(player);
+
+        return HookResult.Continue;
+    }
+
+    private static void CloseAllMenus()
+    {
+        foreach (var player in Utilities.GetPlayers())
+        {
+            if (player is { IsValid: true })
+                CloseMenu(player);
+        }
     }
 
     internal static void CloseMenu(CCSPlayerController player)
@@ -294,12 +323,51 @@ public partial class AdminPlus
             if (!pl.IsValid) continue;
             if (_menuStates.TryGetValue(pl.Slot, out var state) && state.ActiveMenu != null)
             {
-                ProcessMenuInput(pl, state, pl.Buttons);
+                if (pl.Pawn?.Value?.MovementServices is null)
+                {
+                    CloseMenu(pl);
+                    continue;
+                }
+
+                PlayerButtons buttons;
+                try
+                {
+                    buttons = pl.Buttons;
+                }
+                catch
+                {
+                    CloseMenu(pl);
+                    continue;
+                }
+
+                ProcessMenuInput(pl, state, buttons);
                 RenderMenu(pl, state);
             }
-            if (_frozenSlots.Contains(pl.Slot) && pl.PlayerPawn?.Value != null)
-                pl.PlayerPawn.Value.VelocityModifier = 0f;
+            if (_frozenSlots.Contains(pl.Slot))
+                SetFrozen(pl, true, stripWish: true);
         }
+    }
+
+    private void OnInternalMenuPreEntityThink()
+    {
+        foreach (var pl in Utilities.GetPlayers())
+        {
+            if (!pl.IsValid || !_frozenSlots.Contains(pl.Slot))
+                continue;
+
+            SetFrozen(pl, true, stripWish: false);
+        }
+    }
+
+    private HookResult OnInternalMenuBotTakeover(EventBotTakeover ev, GameEventInfo info)
+    {
+        var human = ev.Userid;
+        var bot = ev.Botid;
+        if (human is not { IsValid: true } || bot is not { IsValid: true })
+            return HookResult.Continue;
+
+        _possessedBotSlot[human.Slot] = bot.Slot;
+        return HookResult.Continue;
     }
 
     /// <summary>
@@ -544,26 +612,230 @@ public partial class AdminPlus
         return option.Text;
     }
 
-    private static void SetFrozen(CCSPlayerController player, bool frozen)
+    private static void SetFrozen(CCSPlayerController player, bool frozen, bool stripWish = false)
     {
-        if (player.PlayerPawn?.Value == null) return;
+        // Takeover applies the occupant's usercmd to Pawn before OnTick, so
+        // writing VelocityModifier there never sees the walk. PreEntityThink
+        // sets MOVETYPE_NONE and pins origin. Do not clear buttons in
+        // PreEntityThink: the menu reads W/S on OnTick.
         if (frozen)
-        {
-            if (!_savedSpeed.ContainsKey(player.Slot))
-                _savedSpeed[player.Slot] = player.PlayerPawn.Value.VelocityModifier;
             _frozenSlots.Add(player.Slot);
-            return;
+        else
+            _frozenSlots.Remove(player.Slot);
+
+        try
+        {
+            var pawns = OccupiedPawns(player);
+            if (frozen)
+            {
+                if (!_savedMenuFreeze.TryGetValue(player.Slot, out var saved))
+                {
+                    saved = new Dictionary<uint, FrozenPawnState>();
+                    _savedMenuFreeze[player.Slot] = saved;
+                }
+
+                foreach (var pawn in pawns)
+                {
+                    if (!saved.TryGetValue(pawn.Index, out var state))
+                    {
+                        state = SnapshotPawn(pawn);
+                        saved[pawn.Index] = state;
+                    }
+
+                    ImmobilizePawn(pawn, state);
+                    if (stripWish)
+                        StripWish(pawn);
+                }
+
+                return;
+            }
+
+            if (_savedMenuFreeze.TryGetValue(player.Slot, out var restore))
+            {
+                foreach (var pawn in pawns)
+                {
+                    if (restore.TryGetValue(pawn.Index, out var state))
+                        RestorePawn(pawn, state);
+                }
+
+                _savedMenuFreeze.Remove(player.Slot);
+            }
+        }
+        catch
+        {
+            // Occupied pawn can vanish mid-takeover; do not take down OnTick.
+        }
+    }
+
+    private static List<CBasePlayerPawn> OccupiedPawns(CCSPlayerController player)
+    {
+        var pawns = new List<CBasePlayerPawn>(4);
+        AddPawn(pawns, player.Pawn?.Value);
+        AddPawn(pawns, player.PlayerPawn?.Value);
+        try
+        {
+            AddPawn(pawns, player.ObserverPawn?.Value);
+        }
+        catch
+        {
+            // Observer pawn is optional.
         }
 
-        _frozenSlots.Remove(player.Slot);
-        if (_savedSpeed.TryGetValue(player.Slot, out var speed))
+        try
         {
-            Server.NextFrame(() =>
+            var original = player.OriginalControllerOfCurrentPawn.Value;
+            if (original != null && original.IsValid && original.Slot != player.Slot)
             {
-                if (player.PlayerPawn?.Value != null)
-                    player.PlayerPawn.Value.VelocityModifier = speed;
-                _savedSpeed.Remove(player.Slot);
-            });
+                AddPawn(pawns, original.Pawn?.Value);
+                AddPawn(pawns, original.PlayerPawn?.Value);
+            }
         }
+        catch
+        {
+            // Occupancy handle can be unreadable during inverted takeover.
+        }
+
+        if (_possessedBotSlot.TryGetValue(player.Slot, out var botSlot))
+        {
+            var bot = Utilities.GetPlayerFromSlot(botSlot);
+            if (bot != null && bot.IsValid)
+            {
+                AddPawn(pawns, bot.Pawn?.Value);
+                AddPawn(pawns, bot.PlayerPawn?.Value);
+            }
+        }
+
+        foreach (var other in Utilities.GetPlayers())
+        {
+            if (other == null || !other.IsValid || other.Slot == player.Slot)
+                continue;
+
+            try
+            {
+                var body = other.PlayerPawn?.Value;
+                if (body == null || !body.IsValid)
+                    continue;
+
+                if (body.Controller?.Value is CCSPlayerController occupier
+                    && occupier.IsValid
+                    && occupier.Slot == player.Slot)
+                {
+                    AddPawn(pawns, body);
+                }
+            }
+            catch
+            {
+                // Skip this candidate; other sources still apply.
+            }
+        }
+
+        return pawns;
+    }
+
+    private static void AddPawn(List<CBasePlayerPawn> pawns, CBasePlayerPawn? pawn)
+    {
+        if (pawn == null || !pawn.IsValid)
+            return;
+
+        foreach (var existing in pawns)
+        {
+            if (existing.Index == pawn.Index)
+                return;
+        }
+
+        pawns.Add(pawn);
+    }
+
+    private static FrozenPawnState SnapshotPawn(CBasePlayerPawn pawn)
+    {
+        var origin = pawn.AbsOrigin;
+        return new FrozenPawnState
+        {
+            MoveType = pawn.MoveType,
+            ActualMoveType = pawn.ActualMoveType,
+            OriginX = origin?.X ?? 0f,
+            OriginY = origin?.Y ?? 0f,
+            OriginZ = origin?.Z ?? 0f,
+        };
+    }
+
+    private static void ImmobilizePawn(CBasePlayerPawn pawn, FrozenPawnState state)
+    {
+        pawn.MoveType = MoveType_t.MOVETYPE_NONE;
+        pawn.ActualMoveType = MoveType_t.MOVETYPE_NONE;
+        try
+        {
+            Utilities.SetStateChanged(pawn, "CBaseEntity", "m_MoveType");
+            Utilities.SetStateChanged(pawn, "CBaseEntity", "m_nActualMoveType");
+        }
+        catch
+        {
+            // Schema mark is best-effort; MOVETYPE_NONE still applies server-side.
+        }
+
+        try
+        {
+            // Null angles: rewriting AbsRotation every think overwrites mouse look.
+            pawn.Teleport(
+                new System.Numerics.Vector3(state.OriginX, state.OriginY, state.OriginZ),
+                null,
+                new System.Numerics.Vector3(0f, 0f, 0f));
+        }
+        catch
+        {
+            // Pawn can be mid-swap during takeover.
+        }
+    }
+
+    private static void StripWish(CBasePlayerPawn pawn)
+    {
+        try
+        {
+            if (pawn.MovementServices is not CPlayer_MovementServices movement)
+                return;
+
+            var states = movement.Buttons.ButtonStates;
+            if (states.Length > 0)
+                states[0] &= ~MovementButtonMask;
+
+            movement.ForwardMove = 0f;
+            movement.LeftMove = 0f;
+            movement.UpMove = 0f;
+            movement.CmdForwardMove = 0f;
+            movement.CmdLeftMove = 0f;
+            movement.CmdUpMove = 0f;
+        }
+        catch
+        {
+            // Menu already consumed this tick's buttons.
+        }
+    }
+
+    private static void RestorePawn(CBasePlayerPawn pawn, FrozenPawnState state)
+    {
+        pawn.MoveType = state.MoveType;
+        pawn.ActualMoveType = state.ActualMoveType;
+        try
+        {
+            Utilities.SetStateChanged(pawn, "CBaseEntity", "m_MoveType");
+            Utilities.SetStateChanged(pawn, "CBaseEntity", "m_nActualMoveType");
+        }
+        catch
+        {
+            // Restore write still happened even if the mark failed.
+        }
+    }
+
+    private static readonly ulong MovementButtonMask =
+        (ulong)(PlayerButtons.Forward | PlayerButtons.Back | PlayerButtons.Moveleft
+            | PlayerButtons.Moveright | PlayerButtons.Jump | PlayerButtons.Duck | PlayerButtons.Speed);
+
+    private readonly struct FrozenPawnState
+    {
+        public MoveType_t MoveType { get; init; }
+        public MoveType_t ActualMoveType { get; init; }
+        public float OriginX { get; init; }
+        public float OriginY { get; init; }
+        public float OriginZ { get; init; }
     }
 }

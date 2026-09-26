@@ -17,7 +17,7 @@ Advanced CounterStrikeSharp admin plugin with comprehensive features: ban/kick s
 - 📢 **Chat Commands**: Admin say, center say, HUD messages
 - 🔒 **Reservation System**: Admin priority slots and player management
 - 📊 **Report System**: Player-to-player reporting with Discord integration  
-- 🌍 **Multi-language**: English, Turkish, French, Russian, German, and Brazilian Portuguese support
+- 🌍 **Multi-language**: English, Turkish, French, Russian, German, Polish, Brazilian Portuguese, and Simplified Chinese support
 - 📝 **Advanced Logging**: All actions logged to files and 7 different Discord webhook channels
 - 🔗 **Discord Integration**: Server status, ban logs, admin commands, communication logs, connection tracking, chat logs, and report system
 - 🔔 **Smart Notifications**: Intelligent admin alerts based on action importance and type
@@ -317,7 +317,7 @@ The plugin features a powerful built-in menu system, accessible via `css_admin`:
 
 ## 🌍 Localization
 
-The plugin currently supports **English**, **Turkish**, **French**, **Russian**, **German**, and **Brazilian Portuguese** languages with customizable messages through translation files.
+The plugin currently supports **English**, **Turkish**, **French**, **Russian**, **German**, **Polish**, **Brazilian Portuguese**, and **Simplified Chinese** languages with customizable messages through translation files.
 
 ### 🌍 Multi-language Support
 
@@ -327,7 +327,11 @@ Current language support:
 - 🇫🇷 **French** - Full translation with modern color-coded messages (Thanks to felyjyn) ✅
 - 🇷🇺 **Russian** - Full translation with modern color-coded messages added in v1.0.3 ✅
 - 🇩🇪 **German** - Full translation with modern color-coded messages added in v1.0.3 ✅
+- 🇵🇱 **Polish** - Full translation ✅
 - 🇧🇷 **Brazilian Portuguese** - Full translation added in v1.0.4 ✅
+- 🇨🇳 **Simplified Chinese** - Full translation (`lang/zh-CN.json`) ✅
+
+> On Linux, CounterStrikeSharp may expose Simplified Chinese as `zh-Hans-CN` through .NET's culture list. If `ServerLanguage: "zh-CN"` is rejected by the core, set it to `"zh-Hans-CN"` in `csgo/addons/counterstrikesharp/configs/core.json`. AdminPlus includes both `zh-CN.json` and the `zh-Hans-CN.json` compatibility alias.
 
 ### 🚀 More Languages Coming Soon!
 
@@ -336,9 +340,7 @@ We're working on adding support for additional languages:
 - 🇦🇷 Arabic (العربية)
 - 🇮🇷 Farsi (فارسی)
 - 🇱🇻 Latvian (Latviešu)
-- 🇵🇱 Polish (Polski)
 - 🇵🇹 Portuguese (Português)
-- 🇨🇳 Chinese (Simplified) (中文简体)
 
 ### 🤝 Contribute Translations
 
@@ -364,6 +366,13 @@ The plugin uses CounterStrikeSharp's permission system:
 - `@css/unban` - Unban commands
 - `@css/reservation` - Reservation system access
 
+Admin entries use either direct flags or groups:
+
+- `@css/root` is a permission flag and can be placed directly in `admins.json`.
+- `#css/admin` is a group name and is valid only when the same key exists in `admin_groups.json`.
+- The `!admin` menu now lists groups from `admin_groups.json` and includes a direct `@css/root` option. Selecting an existing player updates their assignment instead of reporting a no-op.
+- Changes are applied to an online player immediately and persisted to `admins.json`; reconnect the player or reload the CounterStrikeSharp admin data for other plugins to observe a file-only change.
+
 ## 📝 Logging
 
 All admin actions are logged to:
@@ -386,7 +395,13 @@ Quick map access with aliases:
 
 ## 📋 Changelog
 
-### 🔧 Version 1.0.8 (Latest)
+### 🔧 Version 1.0.11 (Latest)
+- **Menu**: closes on round restart and respawn so spawn teleport is not blocked.
+
+### 🔧 Version 1.0.10
+- **Menu**: opening a menu holds the player in place, including a possessed bot. Look stays free.
+
+### 🔧 Version 1.0.8
 - **Compatibility**: CounterStrikeSharp API updated to `1.0.368`
 - **Menu system**
   - Menu input handling aligned with MenuManager-style snapshot + `HasFlag` detection (fixes **R** not closing the menu)
