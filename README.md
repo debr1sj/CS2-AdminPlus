@@ -12,7 +12,7 @@ Advanced CounterStrikeSharp admin plugin with comprehensive features: ban/kick s
 - 👥 **Admin Management**: Add/remove admins with immunity levels
 - 💬 **Communication Control**: Mute, gag, and silence players
 - 🗳️ **Voting System**: Map votes, kick votes, ban votes, and custom votes
-- 🎮 **Interactive Menus**: Easy menu system for management
+- 🎮 **Interactive Menus**: Easy menu system for management (add menu changemap for officials maps and workshop maps) 
 - 🎯 **Fun Commands**: Teleport, freeze, blind, drug effects, and more
 - 📢 **Chat Commands**: Admin say, center say, HUD messages
 - 🔒 **Reservation System**: Admin priority slots and player management
@@ -44,6 +44,8 @@ The plugin uses file-based storage:
 - `csgo/addons/counterstrikesharp/plugins/AdminPlus/communication_data.json` - Mute/gag data
 - `csgo/addons/counterstrikesharp/plugins/AdminPlus/adminplus-discord.json` - Discord webhook configuration
 - `csgo/addons/counterstrikesharp/plugins/AdminPlus/adminplus_menu_config.json` - In-game menu key bindings (created automatically on first load)
+- `csgo/addons/counterstrikesharp/plugins/AdminPlus/maps.json` - All your maps officials and workshop for menu.
+- `csgo/addons/counterstrikesharp/plugins/AdminPlus/officialmaps.json` - Obligatory All Official maps
 
 ### 🎮 Menu configuration (`adminplus_menu_config.json`)
 
@@ -386,7 +388,15 @@ Quick map access with aliases:
 
 ## 📋 Changelog
 
-### 🔧 Version 1.0.8 (Latest)
+### 🔧 Version 1.0.9 (Latest)
+- **Compatibility**: .NET 10 and CounterStrikeSharp API `1.0.379`
+- **Commands**
+  - Centralized use of `TrieChangeLevel()` for classic map changes
+  - Applied to administrator commands and vote results
+  - Specific handling of Workshop maps (`host_workshop_map`) preserved
+- **Menu**: Map change menu retains its current behavior
+
+### 🔧 Version 1.0.8
 - **Compatibility**: CounterStrikeSharp API updated to `1.0.368`
 - **Menu system**
   - Menu input handling aligned with MenuManager-style snapshot + `HasFlag` detection (fixes **R** not closing the menu)
@@ -498,7 +508,7 @@ Quick map access with aliases:
 If you encounter any issues or bugs:
 1. Check the [GitHub Issues](https://github.com/debr1sj/CS2-AdminPlus/issues) first
 2. Create a new issue with:
-   - **Plugin version**: AdminPlus v1.0.8
+   - **Plugin version**: AdminPlus v1.0.9
    - **CounterStrikeSharp version**: Your CSS version
    - **Error logs**: Any console errors
    - **Steps to reproduce**: How to trigger the bug

@@ -1,0 +1,31 @@
+# Build outputs
+BuildOutput/
+bin/
+obj/
+
+# Visual Studio / IDE
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.vspscc
+*.vssscc
+*.userprefs
+
+# .NET
+*.dll
+*.pdb
+*.exe
+*.deps.json
+*.runtimeconfig.json
+
+# Temporary files
+*.tmp
+*.log
+*.cache
+*.bak
+
+# NuGet
+packages/
+*.nupkg

@@ -31,7 +31,7 @@ namespace AdminPlus;
 public partial class AdminPlus : BasePlugin
 {
     public override string ModuleName => "AdminPlus";
-    public override string ModuleVersion => "1.0.8";
+    public override string ModuleVersion => "1.0.9";
     public override string ModuleAuthor => "Debr1sj";
 
     internal static string BannedUserPath = string.Empty;
@@ -106,6 +106,9 @@ public partial class AdminPlus : BasePlugin
         EnsureAdminConfigFiles();
         EnsurePluginDataFiles();
         LoadMenuConfigFile();
+        EnsureMapFiles();
+        LoadMaps();
+        LoadOfficialMaps();
 
             BannedUserPath = Path.Combine(Server.GameDirectory, "csgo/cfg/banned_user.cfg");
             BannedIpPath = Path.Combine(Server.GameDirectory, "csgo/cfg/banned_ip.cfg");
@@ -144,7 +147,6 @@ public partial class AdminPlus : BasePlugin
         try
         {
             Directory.CreateDirectory(ModuleDirectory);
-
             var communicationDataPath = Path.Combine(ModuleDirectory, "communication_data.json");
             if (!File.Exists(communicationDataPath))
             {
@@ -154,6 +156,59 @@ public partial class AdminPlus : BasePlugin
         catch (Exception ex)
         {
             LogError($"Failed to bootstrap plugin data files: {ex.Message}");
+        }
+    }
+
+    private void EnsureMapFiles()
+    {
+        try
+        {
+            Directory.CreateDirectory(ModuleDirectory);
+
+            var defaultMaps = new List<string>
+            {
+                "ar_baggage",
+                "ar_pool_day",
+                "ar_shoots",
+                "ar_shoots_night",
+                "cs_italy",
+                "cs_office",
+                "cs_shelter",
+                "de_ancient",
+                "de_ancient_night",
+                "de_anubis",
+                "de_boulder",
+                "de_cache",
+                "de_debris",
+                "de_dust2",
+                "de_eldorado",
+                "de_fachwerk",
+                "de_inferno",
+                "de_mirage",
+                "de_nuke",
+                "de_overpass",
+                "de_poseidon",
+                "de_train",
+                "de_vertigo"
+            };
+
+            var json = JsonSerializer.Serialize(defaultMaps, new JsonSerializerOptions { WriteIndented = true });
+
+            var mapsPath = Path.Combine(ModuleDirectory, "maps.json");
+            if (!File.Exists(mapsPath))
+            {
+                File.WriteAllText(mapsPath, json);
+            }
+
+            var officialMapsPath = Path.Combine(ModuleDirectory, "officialmaps.json");
+            if (!File.Exists(officialMapsPath))
+            {
+                File.WriteAllText(officialMapsPath, json);
+            }
+        }
+        catch (Exception ex)
+        {
+            LogError($"Failed to ensure map files: {ex.Message}");
         }
     }
 
@@ -233,6 +288,8 @@ public partial class AdminPlus : BasePlugin
         RegisterListener<Listeners.OnMapStart>((mapName) =>
         {
             DisconnectedPlayers.Clear();
+            LoadMaps();
+            LoadOfficialMaps();
             if (!_communicationInitialized)
             {
                 InitializeCommunication();
@@ -733,20 +790,20 @@ public partial class AdminPlus : BasePlugin
 
         try
         {
-            var ipConVar = ConVar.Find("ip");
-            if (ipConVar != null && !string.IsNullOrWhiteSpace(ipConVar.StringValue))
+            var ipConVar = ConVar<string>.Find("ip");
+            if (ipConVar != null && !string.IsNullOrWhiteSpace(ipConVar.Value))
             {
-                ip = ipConVar.StringValue;
+                ip = ipConVar.Value;
             }
         }
         catch { }
 
         try
         {
-            var hostPortConVar = ConVar.Find("hostport");
+            var hostPortConVar = ConVar<int>.Find("hostport");
             if (hostPortConVar != null)
             {
-                var portValue = hostPortConVar.GetPrimitiveValue<int>();
+                var portValue = hostPortConVar.Value;
                 if (portValue > 0)
                     port = portValue.ToString();
             }

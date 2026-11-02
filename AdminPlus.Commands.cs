@@ -984,7 +984,7 @@ public partial class AdminPlus
         }
 
         var cvarName = info.GetArg(1);
-        var convar = ConVar.Find(cvarName);
+        var convar = ConVar<string>.Find(cvarName);
 
         if (convar == null)
         {
@@ -994,7 +994,7 @@ public partial class AdminPlus
 
         if (info.ArgCount == 2)
         {
-            string response = $"{cvarName} = {convar.StringValue}";
+            string response = $"{cvarName} = {convar.Value}";
             if (caller != null && caller.IsValid)
                 caller.Print(response);
             else
@@ -1010,8 +1010,8 @@ public partial class AdminPlus
             return;
         }
 
-        var oldValue = convar.StringValue;
-        convar.SetValue(newValue);
+        var oldValue = convar.Value;
+        convar.Value = newValue;
 
         string executorName = GetExecutorNameCommand(caller);
         string message = Localizer["Cvar.Changed", executorName, oldValue, newValue];
@@ -1108,7 +1108,7 @@ public partial class AdminPlus
         {
             try
             {
-                Server.ExecuteCommand($"changelevel {targetMap}");
+                TrieChangeLevel(targetMap);
             }
             catch (Exception ex)
             {

@@ -569,7 +569,7 @@ public partial class AdminPlus
                 {
                     try
                     {
-                        Server.ExecuteCommand($"changelevel {mapToChange}");
+                        TrieChangeLevel(mapToChange);
                     }
                     catch (Exception ex)
                     {
