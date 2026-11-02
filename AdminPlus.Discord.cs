@@ -502,10 +502,10 @@ public static class Discord
         var serverHostname = "CS2 Server";
         try
         {
-            var hostnameConVar = ConVar.Find("hostname");
-            if (hostnameConVar != null && !string.IsNullOrEmpty(hostnameConVar.StringValue))
+            var hostnameConVar = ConVar<string>.Find("hostname");
+            if (hostnameConVar != null && !string.IsNullOrEmpty(hostnameConVar.Value))
             {
-                serverHostname = hostnameConVar.StringValue;
+                serverHostname = hostnameConVar.Value;
             }
         }
         catch (Exception)
@@ -712,10 +712,10 @@ public static class Discord
             var serverHostname = "CS2 Server";
             try
             {
-                var hostnameConVar = ConVar.Find("hostname");
-                if (hostnameConVar != null && !string.IsNullOrEmpty(hostnameConVar.StringValue))
+                var hostnameConVar = ConVar<string>.Find("hostname");
+                if (hostnameConVar != null && !string.IsNullOrEmpty(hostnameConVar.Value))
                 {
-                    serverHostname = hostnameConVar.StringValue;
+                    serverHostname = hostnameConVar.Value;
                 }
             }
             catch { }
@@ -923,10 +923,10 @@ public static class Discord
     {
         try
         {
-            var mpTimelimit = ConVar.Find("mp_timelimit");
+            var mpTimelimit = ConVar<int>.Find("mp_timelimit");
             if (mpTimelimit != null)
             {
-                var timeLimit = mpTimelimit.GetPrimitiveValue<int>();
+                var timeLimit = mpTimelimit.Value;
                 if (timeLimit > 0)
                 {
                     return $"{timeLimit} minutes";

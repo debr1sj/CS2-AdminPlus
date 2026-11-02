@@ -107,7 +107,8 @@ public partial class AdminPlus : BasePlugin
         EnsurePluginDataFiles();
         LoadMenuConfigFile();
         EnsureMapFiles();
-
+        LoadMaps();
+        LoadOfficialMaps();
 
             BannedUserPath = Path.Combine(Server.GameDirectory, "csgo/cfg/banned_user.cfg");
             BannedIpPath = Path.Combine(Server.GameDirectory, "csgo/cfg/banned_ip.cfg");
@@ -287,6 +288,8 @@ public partial class AdminPlus : BasePlugin
         RegisterListener<Listeners.OnMapStart>((mapName) =>
         {
             DisconnectedPlayers.Clear();
+            LoadMaps();
+            LoadOfficialMaps();
             if (!_communicationInitialized)
             {
                 InitializeCommunication();
@@ -787,20 +790,20 @@ public partial class AdminPlus : BasePlugin
 
         try
         {
-            var ipConVar = ConVar.Find("ip");
-            if (ipConVar != null && !string.IsNullOrWhiteSpace(ipConVar.StringValue))
+            var ipConVar = ConVar<string>.Find("ip");
+            if (ipConVar != null && !string.IsNullOrWhiteSpace(ipConVar.Value))
             {
-                ip = ipConVar.StringValue;
+                ip = ipConVar.Value;
             }
         }
         catch { }
 
         try
         {
-            var hostPortConVar = ConVar.Find("hostport");
+            var hostPortConVar = ConVar<int>.Find("hostport");
             if (hostPortConVar != null)
             {
-                var portValue = hostPortConVar.GetPrimitiveValue<int>();
+                var portValue = hostPortConVar.Value;
                 if (portValue > 0)
                     port = portValue.ToString();
             }

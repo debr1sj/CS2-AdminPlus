@@ -624,10 +624,10 @@ public partial class AdminPlus
         if (info.ArgCount < 2 || !int.TryParse(info.GetArg(1), out var value))
         { SendErrorMessage(caller, "MustBeInteger", Localizer["MustBeInteger"]); return; }
 
-        var cvar = ConVar.Find("sv_gravity");
+        var cvar = ConVar<float>.Find("sv_gravity");
         if (cvar == null) { SendErrorMessage(caller, "CvarNotFound", Localizer["CvarNotFound", "sv_gravity"]); return; }
 
-        var oldValue = cvar.GetPrimitiveValue<float>();
+        var oldValue = cvar.Value;
         Server.ExecuteCommand($"sv_gravity {value}");
         var admin = (caller == null || !caller.IsValid) ? Localizer["Console"] : caller.PlayerName;
         string message = Localizer["Cvar.Changed", admin, oldValue.ToString(), value.ToString()];

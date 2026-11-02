@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.IO;
 
 using System.Linq;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Drawing;
 
@@ -17,12 +18,9 @@ namespace AdminPlus;
 
 public partial class AdminPlus
 {
-    private static readonly List<string> PredefinedMaps = new()
-    {
-        "de_vertigo", "de_mirage", "de_inferno", "de_anubis", "de_nuke",
-        "de_overpass", "de_train", "de_ancient", "de_dust2"
-    };
-    
+    private List<string> _maps = new();
+    private List<string> _officialMaps = new();
+
     public static void CleanupMenu()
     {
         try
@@ -31,6 +29,64 @@ public partial class AdminPlus
         catch (Exception ex)
         {
             LogError($"during menu cleanup: {ex.Message}");
+        }
+    }
+
+    private void LoadMaps()
+    {
+        try
+        {
+            var mapsPath = Path.Combine(ModuleDirectory, "maps.json");
+            if (!File.Exists(mapsPath))
+            {
+                return;
+            }
+
+            var json = File.ReadAllText(mapsPath);
+            var loaded = JsonSerializer.Deserialize<List<string>>(json);
+            if (loaded != null)
+            {
+                _maps = loaded;
+            }
+        }
+        catch (Exception ex)
+        {
+            LogError($"Failed to load maps.json: {ex.Message}");
+        }
+    }
+
+    private void LoadOfficialMaps()
+    {
+        try
+        {
+            var officialMapsPath = Path.Combine(ModuleDirectory, "officialmaps.json");
+            if (!File.Exists(officialMapsPath))
+            {
+                return;
+            }
+
+            var json = File.ReadAllText(officialMapsPath);
+            var loaded = JsonSerializer.Deserialize<List<string>>(json);
+            if (loaded != null)
+            {
+                _officialMaps = loaded;
+            }
+        }
+        catch (Exception ex)
+        {
+            LogError($"Failed to load officialmaps.json: {ex.Message}");
+        }
+    }
+
+    private void TrieChangeLevel(string map)
+    {
+        if (_officialMaps.Contains(map))
+        {
+            Server.ExecuteCommand($"changelevel {map}");
+        }
+        else
+        {
+            Server.ExecuteCommand($"ds_workshop_changelevel {map}");
         }
     }
 
@@ -51,13 +107,13 @@ public partial class AdminPlus
     public void AdminMenu(CCSPlayerController? caller, CommandInfo info)
     {
         bool isConsoleCommand = caller == null;
-        
+
         if (isConsoleCommand)
         {
             Console.WriteLine("[AdminPlus] Admin menu opened from console.");
             return;
         }
-        
+
         if (caller == null || !caller.IsValid || !HasEffectivePermission(caller, "@css/generic"))
         {
             caller?.Print(Localizer["NoPermission"]);
@@ -86,7 +142,7 @@ public partial class AdminPlus
             menu?.AddMenuOption(menuName, (_, _) => { menuOptionData.Action.Invoke(); }, menuOptionData.Disabled);
         }
 
-        if (menu != null) 
+        if (menu != null)
         {
             menu.ExitButton = true;
             OpenMenu(caller, menu);
@@ -103,7 +159,7 @@ public partial class AdminPlus
 
         var m = CreateMenu(Localizer["Menu.Fun.Title"]);
         if (m == null) return;
-        
+
         m.AddMenuOption(Localizer["Menu.Fun.Cat.Teleport"], (p, o) => ShowFunTeleportMenu(admin));
         m.AddMenuOption(Localizer["Menu.Fun.Cat.PlayerFx"], (p, o) => ShowFunPlayerFxMenu(admin));
         m.AddMenuOption(Localizer["Menu.Fun.Cat.Weapons"], (p, o) => ShowFunWeaponsMenu(admin));
@@ -152,7 +208,7 @@ public partial class AdminPlus
     {
         var m = CreateMenu(title);
         if (m == null) return;
-        
+
         m.AddMenuOption(Localizer["On"], (p, o) => onPicked(1));
         m.AddMenuOption(Localizer["Off"], (p, o) => onPicked(0));
         {
@@ -165,7 +221,7 @@ public partial class AdminPlus
     {
         var m = CreateMenu(title);
         if (m == null) return;
-        
+
         foreach (var opt in options)
             m.AddMenuOption(opt, (p, o) => onPicked(opt));
         {
@@ -396,7 +452,7 @@ public partial class AdminPlus
         {
             var tm = CreateMenu(Localizer["Menu.Fun.Prompt.SetHpTeam"]);
             if (tm == null) return;
-            
+
             tm.AddMenuOption("Terrorist Team", (pp, oo) => ShowNumberMenu(admin, Localizer["Menu.Fun.Prompt.Hp"], new[] { "50", "100", "150", "200" }, hp => RunServerCmd(admin, $"css_sethp t {hp}")));
             tm.AddMenuOption("CT Team", (pp, oo) => ShowNumberMenu(admin, Localizer["Menu.Fun.Prompt.Hp"], new[] { "50", "100", "150", "200" }, hp => RunServerCmd(admin, $"css_sethp ct {hp}")));
             tm.ExitButton = true;
@@ -456,7 +512,7 @@ public partial class AdminPlus
             {
                 var tm = CreateMenu(Localizer["Menu.Fun.Prompt.Team"]);
                 if (tm == null) return;
-                
+
                 tm.AddMenuOption("Terrorist Team", (pp, oo) => RunServerCmd(admin, $"css_team {target} t"));
                 tm.AddMenuOption("CT Team", (pp, oo) => RunServerCmd(admin, $"css_team {target} ct"));
                 tm.AddMenuOption("Spectator", (pp, oo) => RunServerCmd(admin, $"css_team {target} spec"));
@@ -484,7 +540,7 @@ public partial class AdminPlus
     {
         var m = CreateMenu(Localizer["Menu.Fun.Cat.Cleanup"]);
         if (m == null) return;
-        
+
         m.AddMenuOption(Localizer["Menu.Fun.Cleanup.Clean"], (p, o) => RunServerCmd(admin, "css_clean"));
         {
             m.ExitButton = true;
@@ -1103,7 +1159,7 @@ public partial class AdminPlus
         var menu = CreateMenu(Localizer["Menu.ChangeMap"]);
         if (menu == null) return;
 
-        foreach (var map in PredefinedMaps)
+        foreach (var map in _maps)
             menu.AddMenuOption(map, (ply, opt) => ShowConfirmChangeMapMenu(admin, map));
 
         menu.ExitButton = true;
@@ -1135,9 +1191,9 @@ public partial class AdminPlus
                 PlayerExtensions.PrintToAll(Localizer["Map.Changed", admin.PlayerName, map]);
                 AddTimer(2.0f, () =>
                 {
-                    try 
-                    { 
-                        Server.ExecuteCommand($"changelevel {map}"); 
+                    try
+                    {
+                        TrieChangeLevel(map);
                     }
                     catch (Exception ex)
                     {
@@ -1152,18 +1208,6 @@ public partial class AdminPlus
         menu.AddMenuOption(Localizer["Menu.ConfirmNo"], (ply, opt) => ShowServerCommands(admin));
         menu.ExitButton = true;
         OpenMenu(admin, menu);
-    }
-
-    private void TrieChangeLevel(string map)
-    {
-        if (PredefinedMaps.Contains(map))
-        {
-            Server.ExecuteCommand($"changelevel {map}");
-        }
-        else
-        {
-            Server.ExecuteCommand($"ds_workshop_changelevel {map}");
-        }
     }
 
     private void ShowPlayerList(CCSPlayerController admin)
@@ -1200,7 +1244,7 @@ public partial class AdminPlus
 
         var menu = CreateMenu(Localizer["Menu.ChooseBanType"]);
         if (menu == null) return;
-        
+
         menu.AddMenuOption(Localizer["Menu.Option.SteamIdBan"], (ply, opt) => ShowDurationMenu(admin, target));
         menu.AddMenuOption(Localizer["Menu.Option.IpBan"], (ply, opt) => ShowReasonMenu(admin, target, 0, true));
         menu.ExitButton = true;
@@ -1308,13 +1352,13 @@ public partial class AdminPlus
     private void BanListMenu(CCSPlayerController? caller, CommandInfo info)
     {
         bool isConsoleCommand = caller == null;
-        
+
         if (isConsoleCommand)
         {
             Console.WriteLine("[AdminPlus] Console ban list menu opened.");
             return;
         }
-        
+
         if (caller == null || !caller.IsValid || !HasEffectivePermission(caller, "@css/ban"))
         {
             caller?.Print(Localizer["NoPermission"]);
@@ -1323,7 +1367,7 @@ public partial class AdminPlus
 
         var root = CreateMenu(Localizer["Menu.BanList"]);
         if (root == null) return;
-        
+
         root.AddMenuOption(Localizer["Menu.BanList.Steam"], (ply, opt) => ShowSteamBanListMenu(caller));
         root.AddMenuOption(Localizer["Menu.BanList.IP"], (ply, opt) => ShowIpBanListMenu(caller));
         root.ExitButton = true;
