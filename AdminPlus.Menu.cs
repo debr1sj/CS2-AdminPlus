@@ -1154,6 +1154,18 @@ public partial class AdminPlus
         OpenMenu(admin, menu);
     }
 
+    private void TrieChangeLevel(string map)
+    {
+        if (PredefinedMaps.Contains(map))
+        {
+            Server.ExecuteCommand($"changelevel {map}");
+        }
+        else
+        {
+            Server.ExecuteCommand($"ds_workshop_changelevel {map}");
+        }
+    }
+
     private void ShowPlayerList(CCSPlayerController admin)
     {
         if (!HasEffectivePermission(admin, "@css/ban"))

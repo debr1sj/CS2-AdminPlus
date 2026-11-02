@@ -1108,7 +1108,7 @@ public partial class AdminPlus
         {
             try
             {
-                Server.ExecuteCommand($"changelevel {targetMap}");
+                TrieChangeLevel(targetMap);
             }
             catch (Exception ex)
             {
